@@ -334,15 +334,18 @@ function Editor() {
               </div>
 
               <Label className="text-xs text-muted-foreground flex items-center justify-between mb-1">
-                <span>Intensidade (marca d'água)</span>
-                <span className="font-mono text-[10px]">{Math.round((model.header_image_opacity ?? 0.25) * 100)}%</span>
+                <span>Transparência (marca d'água)</span>
+                <span className="font-mono text-[10px]">{100 - Math.round((model.header_image_opacity ?? 0.25) * 100)}%</span>
               </Label>
               <Slider
-                min={5} max={100} step={5}
-                value={[Math.round((model.header_image_opacity ?? 0.25) * 100)]}
-                onValueChange={(v) => persist({ header_image_opacity: v[0] / 100 })}
-                className="mb-3"
+                min={0} max={95} step={5}
+                value={[100 - Math.round((model.header_image_opacity ?? 0.25) * 100)]}
+                onValueChange={(v) => persist({ header_image_opacity: (100 - v[0]) / 100 })}
+                className="mb-1"
               />
+              <p className="text-[10px] text-muted-foreground mb-3">
+                0% = imagem nítida · 100% = imagem some e o fundo aparece
+              </p>
 
               {/* Enquadramento da imagem do cabeçalho */}
               <div className="rounded-lg border border-border p-3 bg-muted/30 mb-3">
