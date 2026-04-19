@@ -266,7 +266,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
   if (L === "elegante") {
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed flex" style={{ minHeight: 500 }}>
-        <aside className="relative w-[34%] p-5 text-white flex flex-col overflow-hidden">
+        <aside className="relative w-[34%] p-5 flex flex-col overflow-hidden" style={{ color: headerTextColor }}>
           <HeaderBackground color={headerBgHex ?? S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="relative flex-1 flex flex-col">
             {model.logo_url ? (
