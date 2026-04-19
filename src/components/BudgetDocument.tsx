@@ -84,7 +84,9 @@ function HeaderBackground({
   );
 }
 
-// Logo com enquadramento (zoom + posição) — usado em todos os layouts
+// Logo com enquadramento (zoom + posição) — usado em todos os layouts.
+// object-cover + scale base ≥ 1 garantem que o logo ocupe 100% da caixa
+// (sem bordas brancas em volta), permitindo ainda o ajuste fino do usuário.
 function FramedLogo({ url, zoom, x, y, className, style }: { url: string; zoom?: number; x?: number; y?: number; className?: string; style?: React.CSSProperties }) {
   const z = zoom ?? 1;
   const tx = x ?? 0;
@@ -95,7 +97,7 @@ function FramedLogo({ url, zoom, x, y, className, style }: { url: string; zoom?:
         src={url}
         alt="logo"
         crossOrigin="anonymous"
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover"
         style={{ transform: `translate(${tx}%, ${ty}%) scale(${z})`, transformOrigin: "center" }}
       />
     </div>
