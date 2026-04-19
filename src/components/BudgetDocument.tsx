@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { HEADER_FONTS, resolveScheme, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont } from "@/lib/storage";
+import { HEADER_FONTS, resolveScheme, WATERMARK_COLORS, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont, type WatermarkColor } from "@/lib/storage";
 
 function fmtBR(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -24,17 +24,29 @@ interface Props {
 const VALOR_PX = 16;
 const TOTAL_PX = VALOR_PX * 2; // 32px
 
-// Renderiza o "fundo" do cabeçalho: imagem com opacidade (marca d'água)
-// sobre uma cor sólida/gradiente. Se não houver imagem, mostra só a cor.
+// Renderiza o "fundo" do cabeçalho: imagem (com zoom/posição) + opacidade
+// (marca d'água) + uma camada de cor opcional sobre a imagem.
 function HeaderBackground({
   color,
   imageUrl,
   opacity,
+  zoom,
+  posX,
+  posY,
+  overlayColor,
 }: {
   color: string;
   imageUrl?: string;
   opacity?: number;
+  zoom?: number;
+  posX?: number;
+  posY?: number;
+  overlayColor?: WatermarkColor;
 }) {
+  const z = zoom ?? 1;
+  const px = posX ?? 50;
+  const py = posY ?? 50;
+  const overlay = overlayColor && overlayColor !== "nenhuma" ? WATERMARK_COLORS[overlayColor].hex : null;
   return (
     <>
       <div className="absolute inset-0" style={{ background: color }} />
@@ -43,13 +55,38 @@ function HeaderBackground({
           className="absolute inset-0"
           style={{
             backgroundImage: `url(${imageUrl})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
+            backgroundSize: `${z * 100}% auto`,
+            backgroundPosition: `${px}% ${py}%`,
+            backgroundRepeat: "no-repeat",
             opacity: opacity ?? 0.25,
           }}
         />
       )}
+      {imageUrl && overlay && (
+        <div
+          className="absolute inset-0"
+          style={{ background: overlay, opacity: 0.35, mixBlendMode: "multiply" }}
+        />
+      )}
     </>
+  );
+}
+
+// Logo com enquadramento (zoom + posição) — usado em todos os layouts
+function FramedLogo({ url, zoom, x, y, className, style }: { url: string; zoom?: number; x?: number; y?: number; className?: string; style?: React.CSSProperties }) {
+  const z = zoom ?? 1;
+  const tx = x ?? 0;
+  const ty = y ?? 0;
+  return (
+    <div className={`overflow-hidden flex items-center justify-center ${className ?? ""}`} style={style}>
+      <img
+        src={url}
+        alt="logo"
+        crossOrigin="anonymous"
+        className="h-full w-full object-contain"
+        style={{ transform: `translate(${tx}%, ${ty}%) scale(${z})`, transformOrigin: "center" }}
+      />
+    </div>
   );
 }
 
@@ -72,6 +109,13 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
   const rodape = model.rodape ?? "";
   const headerImg = model.header_image_url;
   const headerOp = model.header_image_opacity ?? 0.25;
+  const headerZoom = model.header_image_zoom ?? 1;
+  const headerPX = model.header_image_x ?? 50;
+  const headerPY = model.header_image_y ?? 50;
+  const headerOverlay = model.header_overlay_color ?? "nenhuma";
+  const logoZoom = model.logo_zoom ?? 1;
+  const logoX = model.logo_x ?? 0;
+  const logoY = model.logo_y ?? 0;
 
   // ---------- LAYOUT MODERNO (gradient hero) ----------
   if (L === "moderno") {
