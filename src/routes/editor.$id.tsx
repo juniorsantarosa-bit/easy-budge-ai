@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, Sparkles, Save, Trash2, Plus, Image as ImgIcon, X, Loader2, Upload } from "lucide-react";
-import { getModel, saveModel, type BudgetModel, type BudgetField, uid } from "@/lib/storage";
+import { getModel, saveModel, type BudgetModel, type BudgetField, type ColorScheme, type LayoutTheme, COLOR_SCHEMES, uid } from "@/lib/storage";
 import { aiImprovements } from "@/server/ai";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { BudgetDocument } from "@/components/BudgetDocument";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
