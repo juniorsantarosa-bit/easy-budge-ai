@@ -1,5 +1,16 @@
 import { forwardRef } from "react";
-import { HEADER_FONTS, resolveScheme, WATERMARK_COLORS, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont, type WatermarkColor } from "@/lib/storage";
+import { HEADER_FONTS, resolveScheme, resolveHeaderBgHex, WATERMARK_COLORS, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont, type WatermarkColor, type HeaderBgColor } from "@/lib/storage";
+
+// Determina se uma cor hex é "clara" (precisa de texto escuro)
+function isLightHex(hex: string): boolean {
+  const h = hex.replace("#", "");
+  const v = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(v.slice(0, 2), 16) || 0;
+  const g = parseInt(v.slice(2, 4), 16) || 0;
+  const b = parseInt(v.slice(4, 6), 16) || 0;
+  // luminância perceptual
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 170;
+}
 
 function fmtBR(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
