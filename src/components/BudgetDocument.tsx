@@ -394,7 +394,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             className="absolute -bottom-10 left-0 right-0 h-24"
             style={{ background: "white", transform: "skewY(-3deg)" }}
           />
-          <div className="relative h-full flex flex-col justify-between p-6 text-white">
+          <div className="relative h-full flex flex-col justify-between p-6" style={{ color: headerTextColor }}>
             <div className="flex items-center justify-between">
               <p className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-90">{subtitulo}</p>
               <p className="text-[11px] opacity-90">{today}</p>
