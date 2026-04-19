@@ -5,25 +5,71 @@ export type LayoutTheme = "moderno" | "elegante" | "minimal" | "magazine" | "cor
 export type ColorScheme =
   | "azul" | "verde" | "roxo" | "vermelho" | "preto" | "rosa"
   | "laranja" | "turquesa" | "dourado" | "grafite" | "indigo" | "vinho";
-export type HeaderFont = "sans" | "serif" | "display" | "mono";
+export type HeaderFont =
+  | "sans" | "serif" | "display" | "mono"
+  | "script" | "elegant" | "retro" | "geometric";
 
+// Cor de fundo do cabeçalho.
+// "branco" é fixo. "primaria/primaria_escura/secundaria/secundaria_escura/suave/suave_accent"
+// são derivadas da paleta selecionada (resolveScheme), então sempre combinam.
+export type HeaderBgColor =
+  | "branco"
+  | "primaria"
+  | "primaria_escura"
+  | "secundaria"
+  | "secundaria_escura"
+  | "suave"
+  | "suave_accent";
+
+export const HEADER_BG_LABELS: Record<HeaderBgColor, string> = {
+  branco: "Branco",
+  primaria: "1ª cor",
+  primaria_escura: "1ª escura",
+  secundaria: "2ª cor",
+  secundaria_escura: "2ª escura",
+  suave: "Suave clara",
+  suave_accent: "Suave destaque",
+};
+
+export function resolveHeaderBgHex(
+  scheme: { primary: string; primaryDark: string; accent: string; accentDark: string; soft: string; softAccent: string },
+  c: HeaderBgColor | undefined,
+): string {
+  switch (c) {
+    case "branco": return "#ffffff";
+    case "primaria_escura": return scheme.primaryDark;
+    case "secundaria": return scheme.accent;
+    case "secundaria_escura": return scheme.accentDark;
+    case "suave": return scheme.soft;
+    case "suave_accent": return scheme.softAccent;
+    case "primaria":
+    default: return scheme.primary;
+  }
+}
+
+// Mantido para compatibilidade do tipo (cor da "tinta" sobre a imagem de fundo).
+// Os valores aqui são apenas placeholders — as cores reais agora vêm da paleta
+// (ver resolveHeaderBgHex). "nenhuma" mantém a imagem sem tingimento.
 export type WatermarkColor = "nenhuma" | "branco" | "preto" | "azul" | "verde" | "vermelho" | "amarelo";
-
 export const WATERMARK_COLORS: Record<WatermarkColor, { label: string; hex: string | null }> = {
-  nenhuma:  { label: "Sem cor",   hex: null },
-  branco:   { label: "Branco",    hex: "#ffffff" },
-  preto:    { label: "Preto",     hex: "#000000" },
-  azul:     { label: "Azul",      hex: "#1e3a8a" },
-  verde:    { label: "Verde",     hex: "#14532d" },
-  vermelho: { label: "Vermelho",  hex: "#7f1d1d" },
-  amarelo:  { label: "Amarelo",   hex: "#facc15" },
+  nenhuma:  { label: "Sem cor",  hex: null },
+  branco:   { label: "Branco",   hex: "#ffffff" },
+  preto:    { label: "Preto",    hex: "#000000" },
+  azul:     { label: "Azul",     hex: "#1e3a8a" },
+  verde:    { label: "Verde",    hex: "#14532d" },
+  vermelho: { label: "Vermelho", hex: "#7f1d1d" },
+  amarelo:  { label: "Amarelo",  hex: "#facc15" },
 };
 
 export const HEADER_FONTS: Record<HeaderFont, { label: string; hint: string; family: string }> = {
-  sans:    { label: "Moderno",  hint: "Logos limpos e geométricos",       family: "'Inter', system-ui, -apple-system, sans-serif" },
-  serif:   { label: "Clássico", hint: "Logos sofisticados, com serifas",  family: "'Playfair Display', 'Georgia', serif" },
-  display: { label: "Marcante", hint: "Logos fortes, gordos, impactantes", family: "'Archivo Black', 'Impact', sans-serif" },
-  mono:    { label: "Técnico",  hint: "Logos minimalistas e tech",        family: "'JetBrains Mono', 'Courier New', monospace" },
+  sans:      { label: "Moderno",   hint: "Limpa e geométrica",                family: "'Inter', system-ui, -apple-system, sans-serif" },
+  serif:     { label: "Clássico",  hint: "Sofisticada, com serifas",          family: "'Playfair Display', 'Georgia', serif" },
+  display:   { label: "Marcante",  hint: "Forte, impactante",                 family: "'Archivo Black', 'Impact', sans-serif" },
+  mono:      { label: "Técnico",   hint: "Minimalista, tech",                 family: "'JetBrains Mono', 'Courier New', monospace" },
+  script:    { label: "Manual",    hint: "Letra de mão, pessoal",             family: "'Caveat', 'Brush Script MT', cursive" },
+  elegant:   { label: "Elegante",  hint: "Suave, refinada",                   family: "'Cormorant Garamond', 'Times New Roman', serif" },
+  retro:     { label: "Retrô",     hint: "Vintage, nostálgica",               family: "'Abril Fatface', 'Cooper Black', serif" },
+  geometric: { label: "Suave",     hint: "Arredondada, amigável",             family: "'Quicksand', 'Avenir Next', sans-serif" },
 };
 
 export const COLOR_SCHEMES: Record<ColorScheme, { primary: string; primaryDark: string; accent: string; accentDark: string; soft: string; softAccent: string; label: string }> = {
@@ -131,7 +177,8 @@ export interface BudgetModel {
   header_image_zoom?: number;   // 1..3
   header_image_x?: number;      // 0..100 (% backgroundPosition X)
   header_image_y?: number;      // 0..100 (% backgroundPosition Y)
-  header_overlay_color?: WatermarkColor; // cor da "marca d'água" sobre a imagem
+  header_overlay_color?: WatermarkColor; // (legado) cor da "tinta" sobre a imagem
+  header_bg_color?: HeaderBgColor; // cor de fundo do cabeçalho (nova: alinhada à paleta)
   rodape?: string;              // texto livre do rodapé
   criado_em: number;
   atualizado_em: number;

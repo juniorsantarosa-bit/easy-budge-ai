@@ -1,5 +1,16 @@
 import { forwardRef } from "react";
-import { HEADER_FONTS, resolveScheme, WATERMARK_COLORS, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont, type WatermarkColor } from "@/lib/storage";
+import { HEADER_FONTS, resolveScheme, resolveHeaderBgHex, WATERMARK_COLORS, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont, type WatermarkColor, type HeaderBgColor } from "@/lib/storage";
+
+// Determina se uma cor hex é "clara" (precisa de texto escuro)
+function isLightHex(hex: string): boolean {
+  const h = hex.replace("#", "");
+  const v = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(v.slice(0, 2), 16) || 0;
+  const g = parseInt(v.slice(2, 4), 16) || 0;
+  const b = parseInt(v.slice(4, 6), 16) || 0;
+  // luminância perceptual
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 170;
+}
 
 function fmtBR(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -117,12 +128,20 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
   const logoX = model.logo_x ?? 0;
   const logoY = model.logo_y ?? 0;
 
+  // Cor de fundo do cabeçalho (alinhada à paleta) — substitui o gradiente padrão.
+  // Se o usuário não escolheu, fica undefined e cada layout usa seu próprio default.
+  const headerBgHex = model.header_bg_color ? resolveHeaderBgHex(S, model.header_bg_color) : undefined;
+  const headerIsLight = headerBgHex ? isLightHex(headerBgHex) : false;
+  // Para legibilidade quando o fundo é claro (ex: branco)
+  const headerTextColor = headerIsLight ? S.primaryDark : "#ffffff";
+  const headerSubtleColor = headerIsLight ? S.primary : "rgba(255,255,255,0.85)";
+
   // ---------- LAYOUT MODERNO (gradient hero) ----------
   if (L === "moderno") {
-    const headerColor = `linear-gradient(135deg, ${S.primaryDark} 0%, ${S.primary} 100%)`;
+    const headerColor = headerBgHex ?? `linear-gradient(135deg, ${S.primaryDark} 0%, ${S.primary} 100%)`;
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
-        <div className="relative px-6 pt-6 pb-8 text-white overflow-hidden">
+        <div className="relative px-6 pt-6 pb-8 overflow-hidden" style={{ color: headerTextColor }}>
           <HeaderBackground color={headerColor} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="absolute top-0 right-0 h-full w-32 opacity-25" style={{ background: `radial-gradient(circle at top right, ${S.accent}, transparent 70%)` }} />
           <div className="relative flex items-start justify-between gap-3">
@@ -247,8 +266,8 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
   if (L === "elegante") {
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed flex" style={{ minHeight: 500 }}>
-        <aside className="relative w-[34%] p-5 text-white flex flex-col overflow-hidden">
-          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
+        <aside className="relative w-[34%] p-5 flex flex-col overflow-hidden" style={{ color: headerTextColor }}>
+          <HeaderBackground color={headerBgHex ?? S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="relative flex-1 flex flex-col">
             {model.logo_url ? (
               <div className="h-16 w-16 rounded-lg bg-white p-1.5 flex items-center justify-center mb-4">
@@ -362,7 +381,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         {/* Capa estilo revista */}
         <div className="relative h-56 overflow-hidden">
           <HeaderBackground
-            color={`linear-gradient(160deg, ${S.primaryDark} 0%, ${S.primary} 60%, ${S.accent} 100%)`}
+            color={headerBgHex ?? `linear-gradient(160deg, ${S.primaryDark} 0%, ${S.primary} 60%, ${S.accent} 100%)`}
             imageUrl={headerImg}
             opacity={headerOp}
             zoom={headerZoom}
@@ -375,7 +394,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             className="absolute -bottom-10 left-0 right-0 h-24"
             style={{ background: "white", transform: "skewY(-3deg)" }}
           />
-          <div className="relative h-full flex flex-col justify-between p-6 text-white">
+          <div className="relative h-full flex flex-col justify-between p-6" style={{ color: headerTextColor }}>
             <div className="flex items-center justify-between">
               <p className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-90">{subtitulo}</p>
               <p className="text-[11px] opacity-90">{today}</p>
@@ -499,8 +518,8 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         {/* Cabeçalho duplo: barra superior fina + bloco principal */}
         <div className="h-2" style={{ background: S.accent }} />
         <div className="relative px-6 py-5 overflow-hidden">
-          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
-          <div className="relative flex items-center justify-between text-white">
+          <HeaderBackground color={headerBgHex ?? S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
+          <div className="relative flex items-center justify-between" style={{ color: headerTextColor }}>
             <div className="flex items-center gap-4">
               {model.logo_url ? (
                 <div className="h-14 w-14 bg-white p-1.5 rounded shadow flex items-center justify-center">
