@@ -649,9 +649,11 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         <div className="relative flex items-center justify-between pb-4 border-b-2" style={{ borderColor: S.primaryDark }}>
           <div className="flex items-center gap-3">
             {model.logo_url ? (
-              <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-12 w-12" />
+              <div className="h-12 w-12 rounded-md overflow-hidden bg-white">
+                <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
+              </div>
             ) : (
-              <div className="h-12 w-12 rounded flex items-center justify-center text-xl font-black text-white" style={{ background: S.primaryDark }}>
+              <div className="h-12 w-12 rounded-md flex items-center justify-center text-xl font-black text-white" style={{ background: S.primaryDark }}>
                 {(model.empresa ?? model.titulo).charAt(0)}
               </div>
             )}
