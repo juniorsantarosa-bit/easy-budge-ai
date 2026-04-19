@@ -23,6 +23,10 @@ export const Route = createFileRoute("/editor/$id")({
   component: Editor,
 });
 
+const HEADER_BG_OPTIONS: HeaderBgColor[] = [
+  "branco", "primaria", "primaria_escura", "secundaria", "secundaria_escura", "suave", "suave_accent",
+];
+
 function Editor() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -53,6 +57,8 @@ function Editor() {
   }, [model]);
 
   if (!model) return null;
+
+  const scheme = resolveScheme(model);
 
   function update(field: BudgetField, val: string) {
     setValues((v) => ({ ...v, [field.chave]: val }));
@@ -150,9 +156,118 @@ function Editor() {
         </Button>
       }
     >
-      {/* Cabeçalho do orçamento (logo + textos + fonte) */}
+      {/* ============ ETAPA 1: LAYOUT ============ */}
       <Card className="p-4 mb-4">
-        <h2 className="text-sm font-semibold mb-3">Cabeçalho do orçamento</h2>
+        <h2 className="text-sm font-semibold mb-1">1. Escolha o layout</h2>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          O layout define a estrutura do documento. Os ajustes seguintes se adaptam à escolha.
+        </p>
+        <div className="-mx-4 px-4 overflow-x-auto pb-2">
+          <div className="flex gap-2" style={{ width: "max-content" }}>
+            {(["moderno", "elegante", "minimal", "magazine", "corporativo"] as LayoutTheme[]).map((lay) => {
+              const active = (model.layout ?? "moderno") === lay;
+              return (
+                <button
+                  key={lay}
+                  onClick={() => persist({ layout: lay })}
+                  className={`rounded-xl overflow-hidden border-2 transition shrink-0 ${active ? "border-primary shadow-md" : "border-border"}`}
+                  style={{ width: 110 }}
+                >
+                  <div className="aspect-[3/4] bg-white relative overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 scale-[0.22] origin-top-left" style={{ width: "455%", height: "455%" }}>
+                      <BudgetDocument model={{ ...model, layout: lay }} values={values} />
+                    </div>
+                  </div>
+                  <p className={`text-[11px] py-1.5 font-semibold capitalize text-center ${active ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                    {lay}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
+
+      {/* ============ ETAPA 2: PALETA DE CORES ============ */}
+      <Card className="p-4 mb-4">
+        <h2 className="text-sm font-semibold mb-1">2. Paleta de cores</h2>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          Define as cores principais. Tudo no orçamento (incluindo o fundo do cabeçalho) será derivado dela.
+        </p>
+        <div className="grid grid-cols-6 gap-2 mb-3">
+          {(Object.keys(COLOR_SCHEMES) as ColorScheme[]).map((c) => {
+            const s = COLOR_SCHEMES[c];
+            const active = (model.cor_esquema ?? "azul") === c && !model.cor_primaria && !model.cor_secundaria;
+            return (
+              <button
+                key={c}
+                onClick={() => persist({ cor_esquema: c, cor_primaria: undefined, cor_secundaria: undefined })}
+                className={`aspect-square rounded-xl flex items-center justify-center transition relative overflow-hidden ${active ? "ring-2 ring-offset-2 ring-primary scale-105" : ""}`}
+                style={{ background: `linear-gradient(135deg, ${s.primary} 50%, ${s.accent} 50%)` }}
+                title={s.label}
+                aria-label={s.label}
+              >
+                {active && <span className="text-white text-lg drop-shadow">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Cor 1 e Cor 2 personalizadas */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">1ª cor (principal)</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={model.cor_primaria || COLOR_SCHEMES[model.cor_esquema ?? "azul"].primary}
+                onChange={(e) => persist({ cor_primaria: e.target.value })}
+                className="h-10 w-12 rounded-md border border-border cursor-pointer p-0.5 bg-transparent"
+              />
+              <Input
+                value={model.cor_primaria || ""}
+                placeholder={COLOR_SCHEMES[model.cor_esquema ?? "azul"].primary}
+                onChange={(e) => persist({ cor_primaria: e.target.value || undefined })}
+                className="h-10 font-mono text-xs"
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">2ª cor (destaque)</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={model.cor_secundaria || COLOR_SCHEMES[model.cor_esquema ?? "azul"].accent}
+                onChange={(e) => persist({ cor_secundaria: e.target.value })}
+                className="h-10 w-12 rounded-md border border-border cursor-pointer p-0.5 bg-transparent"
+              />
+              <Input
+                value={model.cor_secundaria || ""}
+                placeholder={COLOR_SCHEMES[model.cor_esquema ?? "azul"].accent}
+                onChange={(e) => persist({ cor_secundaria: e.target.value || undefined })}
+                className="h-10 font-mono text-xs"
+              />
+            </div>
+          </div>
+        </div>
+        {(model.cor_primaria || model.cor_secundaria) && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-xs h-7 mt-2"
+            onClick={() => persist({ cor_primaria: undefined, cor_secundaria: undefined })}
+          >
+            ↺ Voltar à paleta {COLOR_SCHEMES[model.cor_esquema ?? "azul"].label}
+          </Button>
+        )}
+      </Card>
+
+      {/* ============ ETAPA 3: CABEÇALHO ============ */}
+      <Card className="p-4 mb-4">
+        <h2 className="text-sm font-semibold mb-1">3. Cabeçalho</h2>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          A caixa do logo segue o layout escolhido. Ajuste o enquadramento abaixo.
+        </p>
 
         <div className="flex items-center gap-3 mb-3">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-soft overflow-hidden">
@@ -171,7 +286,7 @@ function Editor() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold">Logo da empresa</p>
-            <p className="text-xs text-muted-foreground">Aparece no cabeçalho do orçamento</p>
+            <p className="text-xs text-muted-foreground">Formato {model.layout ?? "moderno"}</p>
           </div>
           <label className="cursor-pointer">
             <input
@@ -266,13 +381,42 @@ function Editor() {
                 onClick={() => persist({ header_font: f })}
                 className={`rounded-lg border-2 p-2 text-left transition ${cur ? "border-primary bg-primary-soft" : "border-border"}`}
               >
-                <p className="text-base font-bold leading-tight" style={{ fontFamily: HEADER_FONTS[f].family }}>
+                <p className="text-base font-bold leading-tight truncate" style={{ fontFamily: HEADER_FONTS[f].family }}>
                   {model.empresa || "Aa Bb"}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{HEADER_FONTS[f].label}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {HEADER_FONTS[f].label} · {HEADER_FONTS[f].hint}
+                </p>
               </button>
             );
           })}
+        </div>
+
+        {/* Cor de fundo do cabeçalho — alinhada à paleta + branco fixo */}
+        <div className="mt-4">
+          <Label className="text-xs text-muted-foreground mb-2 block">Cor de fundo do cabeçalho</Label>
+          <p className="text-[10px] text-muted-foreground mb-2">
+            Cores derivadas da paleta. O branco está sempre disponível.
+          </p>
+          <div className="grid grid-cols-7 gap-2">
+            {HEADER_BG_OPTIONS.map((c) => {
+              const hex = resolveHeaderBgHex(scheme, c);
+              const active = (model.header_bg_color ?? "primaria") === c;
+              return (
+                <button
+                  key={c}
+                  onClick={() => persist({ header_bg_color: c })}
+                  title={HEADER_BG_LABELS[c]}
+                  aria-label={HEADER_BG_LABELS[c]}
+                  className={`h-10 rounded-md border-2 transition ${active ? "border-primary scale-110 shadow" : "border-border"}`}
+                  style={{ background: hex }}
+                />
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Selecionado: <strong>{HEADER_BG_LABELS[model.header_bg_color ?? "primaria"]}</strong>
+          </p>
         </div>
 
         {/* Imagem de cabeçalho com efeito marca d'água */}
@@ -281,7 +425,7 @@ function Editor() {
             <div>
               <p className="text-sm font-semibold">Imagem de fundo do cabeçalho</p>
               <p className="text-[11px] text-muted-foreground">
-                Substitui a cor sólida — pode ficar suave (marca d'água) com o logo por cima
+                Sobreposta à cor escolhida. Use a transparência para virar marca d'água.
               </p>
             </div>
             <div className="flex items-center gap-1">
@@ -306,10 +450,10 @@ function Editor() {
 
           {model.header_image_url && (
             <>
-              {/* Preview do cabeçalho com imagem + overlay de cor */}
+              {/* Preview do cabeçalho com fundo + imagem */}
               <div
                 className="h-20 w-full rounded-lg border overflow-hidden relative mb-3"
-                style={{ background: resolveScheme(model).primaryDark }}
+                style={{ background: resolveHeaderBgHex(scheme, model.header_bg_color ?? "primaria") }}
               >
                 <div
                   className="absolute inset-0"
@@ -321,16 +465,6 @@ function Editor() {
                     opacity: model.header_image_opacity ?? 0.25,
                   }}
                 />
-                {model.header_overlay_color && model.header_overlay_color !== "nenhuma" && WATERMARK_COLORS[model.header_overlay_color].hex && (
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background: WATERMARK_COLORS[model.header_overlay_color].hex!,
-                      opacity: 0.35,
-                      mixBlendMode: "multiply",
-                    }}
-                  />
-                )}
               </div>
 
               <Label className="text-xs text-muted-foreground flex items-center justify-between mb-1">
@@ -344,11 +478,11 @@ function Editor() {
                 className="mb-1"
               />
               <p className="text-[10px] text-muted-foreground mb-3">
-                0% = imagem nítida · 100% = imagem some e o fundo aparece
+                0% = imagem nítida · 95% = quase só o fundo aparece
               </p>
 
               {/* Enquadramento da imagem do cabeçalho */}
-              <div className="rounded-lg border border-border p-3 bg-muted/30 mb-3">
+              <div className="rounded-lg border border-border p-3 bg-muted/30">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-semibold">Enquadrar imagem</p>
                   <Button
@@ -395,35 +529,6 @@ function Editor() {
                   </div>
                 </div>
               </div>
-
-              {/* Cor da marca d'água */}
-              <Label className="text-xs text-muted-foreground mb-2 block">Cor da marca d'água</Label>
-              <div className="grid grid-cols-7 gap-2">
-                {(Object.keys(WATERMARK_COLORS) as WatermarkColor[]).map((c) => {
-                  const w = WATERMARK_COLORS[c];
-                  const active = (model.header_overlay_color ?? "nenhuma") === c;
-                  return (
-                    <button
-                      key={c}
-                      onClick={() => persist({ header_overlay_color: c })}
-                      title={w.label}
-                      aria-label={w.label}
-                      className={`h-9 rounded-md border-2 flex items-center justify-center transition relative ${active ? "border-primary scale-110 shadow" : "border-border"}`}
-                      style={{
-                        background: w.hex ?? "transparent",
-                        backgroundImage: w.hex ? undefined : "linear-gradient(45deg, #f3f4f6 25%, transparent 25%, transparent 75%, #f3f4f6 75%), linear-gradient(45deg, #f3f4f6 25%, transparent 25%, transparent 75%, #f3f4f6 75%)",
-                        backgroundSize: w.hex ? undefined : "8px 8px",
-                        backgroundPosition: w.hex ? undefined : "0 0, 4px 4px",
-                      }}
-                    >
-                      {!w.hex && <span className="text-[9px] font-bold text-slate-500">∅</span>}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Tinge a imagem para combinar com o esquema do orçamento.
-              </p>
             </>
           )}
         </div>
@@ -574,113 +679,6 @@ function Editor() {
         placeholder={`Ex: contato@suaempresa.com · (11) 99999-9999\nCNPJ 00.000.000/0001-00 · @suaempresa`}
         rows={3}
       />
-
-      {/* Personalização visual: layout + cor */}
-      <h2 className="font-semibold text-sm mb-2 mt-6 flex items-center gap-2">
-        🎨 Personalize o visual
-      </h2>
-      <p className="text-xs text-muted-foreground mb-3">
-        Escolha o layout, as cores e a fonte que mais combinam com seu negócio
-      </p>
-
-      <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-2">
-        Layout ({(["moderno", "elegante", "minimal", "magazine", "corporativo"] as const).length} opções)
-      </p>
-      <div className="-mx-4 px-4 overflow-x-auto pb-2 mb-4">
-        <div className="flex gap-2" style={{ width: "max-content" }}>
-          {(["moderno", "elegante", "minimal", "magazine", "corporativo"] as LayoutTheme[]).map((lay) => {
-            const active = (model.layout ?? "moderno") === lay;
-            return (
-              <button
-                key={lay}
-                onClick={() => persist({ layout: lay })}
-                className={`rounded-xl overflow-hidden border-2 transition shrink-0 ${active ? "border-primary shadow-md" : "border-border"}`}
-                style={{ width: 110 }}
-              >
-                <div className="aspect-[3/4] bg-white relative overflow-hidden pointer-events-none">
-                  <div className="absolute inset-0 scale-[0.22] origin-top-left" style={{ width: "455%", height: "455%" }}>
-                    <BudgetDocument model={{ ...model, layout: lay }} values={values} />
-                  </div>
-                </div>
-                <p className={`text-[11px] py-1.5 font-semibold capitalize text-center ${active ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                  {lay}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Paleta pré-definida */}
-      <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-2">
-        Paleta sugerida ({Object.keys(COLOR_SCHEMES).length} cores)
-      </p>
-      <div className="grid grid-cols-6 gap-2 mb-3">
-        {(Object.keys(COLOR_SCHEMES) as ColorScheme[]).map((c) => {
-          const s = COLOR_SCHEMES[c];
-          const active = (model.cor_esquema ?? "azul") === c && !model.cor_primaria && !model.cor_secundaria;
-          return (
-            <button
-              key={c}
-              onClick={() => persist({ cor_esquema: c, cor_primaria: undefined, cor_secundaria: undefined })}
-              className={`aspect-square rounded-xl flex items-center justify-center transition relative overflow-hidden ${active ? "ring-2 ring-offset-2 ring-primary scale-105" : ""}`}
-              style={{ background: `linear-gradient(135deg, ${s.primary} 50%, ${s.accent} 50%)` }}
-              title={s.label}
-              aria-label={s.label}
-            >
-              {active && <span className="text-white text-lg drop-shadow">✓</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Cor 1 e Cor 2 personalizadas */}
-      <div className="grid grid-cols-2 gap-3 mb-2">
-        <div>
-          <Label className="text-xs text-muted-foreground mb-1 block">1ª cor (principal)</Label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={model.cor_primaria || COLOR_SCHEMES[model.cor_esquema ?? "azul"].primary}
-              onChange={(e) => persist({ cor_primaria: e.target.value })}
-              className="h-10 w-12 rounded-md border border-border cursor-pointer p-0.5 bg-transparent"
-            />
-            <Input
-              value={model.cor_primaria || ""}
-              placeholder={COLOR_SCHEMES[model.cor_esquema ?? "azul"].primary}
-              onChange={(e) => persist({ cor_primaria: e.target.value || undefined })}
-              className="h-10 font-mono text-xs"
-            />
-          </div>
-        </div>
-        <div>
-          <Label className="text-xs text-muted-foreground mb-1 block">2ª cor (destaque)</Label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={model.cor_secundaria || COLOR_SCHEMES[model.cor_esquema ?? "azul"].accent}
-              onChange={(e) => persist({ cor_secundaria: e.target.value })}
-              className="h-10 w-12 rounded-md border border-border cursor-pointer p-0.5 bg-transparent"
-            />
-            <Input
-              value={model.cor_secundaria || ""}
-              placeholder={COLOR_SCHEMES[model.cor_esquema ?? "azul"].accent}
-              onChange={(e) => persist({ cor_secundaria: e.target.value || undefined })}
-              className="h-10 font-mono text-xs"
-            />
-          </div>
-        </div>
-      </div>
-      {(model.cor_primaria || model.cor_secundaria) && (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-xs h-7 mb-3"
-          onClick={() => persist({ cor_primaria: undefined, cor_secundaria: undefined })}
-        >
-          ↺ Voltar à paleta {COLOR_SCHEMES[model.cor_esquema ?? "azul"].label}
-        </Button>
-      )}
 
       {/* AI improvements + Save template */}
       <div className="grid grid-cols-2 gap-2 mt-6">
