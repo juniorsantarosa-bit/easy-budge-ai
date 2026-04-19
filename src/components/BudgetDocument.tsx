@@ -367,7 +367,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           {((model.itens_servico && model.itens_servico.length > 0) || total > 0) && (
             <div className="mt-6 rounded-lg p-4 flex items-center justify-between" style={{ background: S.soft, border: `2px solid ${S.primaryDark}` }}>
               <p className="text-[11px] uppercase tracking-[0.2em] font-bold" style={{ color: S.primaryDark }}>Total da proposta</p>
-              <p className="font-black leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+              <p className="font-black leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX, fontFamily: headerFamily }}>{fmtBR(total)}</p>
             </div>
           )}
 
