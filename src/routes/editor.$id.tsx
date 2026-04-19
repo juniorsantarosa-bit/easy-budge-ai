@@ -306,33 +306,120 @@ function Editor() {
 
           {model.header_image_url && (
             <>
+              {/* Preview do cabeçalho com imagem + overlay de cor */}
               <div
-                className="h-16 w-full rounded-lg border overflow-hidden relative mb-3"
+                className="h-20 w-full rounded-lg border overflow-hidden relative mb-3"
                 style={{ background: resolveScheme(model).primaryDark }}
               >
                 <div
                   className="absolute inset-0"
                   style={{
                     backgroundImage: `url(${model.header_image_url})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
+                    backgroundSize: `${(model.header_image_zoom ?? 1) * 100}% auto`,
+                    backgroundPosition: `${model.header_image_x ?? 50}% ${model.header_image_y ?? 50}%`,
+                    backgroundRepeat: "no-repeat",
                     opacity: model.header_image_opacity ?? 0.25,
                   }}
                 />
+                {model.header_overlay_color && model.header_overlay_color !== "nenhuma" && WATERMARK_COLORS[model.header_overlay_color].hex && (
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: WATERMARK_COLORS[model.header_overlay_color].hex!,
+                      opacity: 0.35,
+                      mixBlendMode: "multiply",
+                    }}
+                  />
+                )}
               </div>
+
               <Label className="text-xs text-muted-foreground flex items-center justify-between mb-1">
-                <span>Intensidade da imagem (marca d'água)</span>
+                <span>Intensidade (marca d'água)</span>
                 <span className="font-mono text-[10px]">{Math.round((model.header_image_opacity ?? 0.25) * 100)}%</span>
               </Label>
               <Slider
-                min={5}
-                max={100}
-                step={5}
+                min={5} max={100} step={5}
                 value={[Math.round((model.header_image_opacity ?? 0.25) * 100)]}
                 onValueChange={(v) => persist({ header_image_opacity: v[0] / 100 })}
+                className="mb-3"
               />
+
+              {/* Enquadramento da imagem do cabeçalho */}
+              <div className="rounded-lg border border-border p-3 bg-muted/30 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold">Enquadrar imagem</p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-[11px]"
+                    onClick={() => persist({ header_image_zoom: 1, header_image_x: 50, header_image_y: 50 })}
+                  >
+                    ↺ Reset
+                  </Button>
+                </div>
+                <Label className="text-[11px] text-muted-foreground flex items-center justify-between mb-1">
+                  <span>Zoom</span>
+                  <span className="font-mono text-[10px]">{(model.header_image_zoom ?? 1).toFixed(2)}×</span>
+                </Label>
+                <Slider
+                  min={100} max={300} step={5}
+                  value={[Math.round((model.header_image_zoom ?? 1) * 100)]}
+                  onValueChange={(v) => persist({ header_image_zoom: v[0] / 100 })}
+                  className="mb-2"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[11px] text-muted-foreground flex items-center justify-between mb-1">
+                      <span>↔ Posição X</span>
+                      <span className="font-mono text-[10px]">{model.header_image_x ?? 50}%</span>
+                    </Label>
+                    <Slider
+                      min={0} max={100} step={1}
+                      value={[model.header_image_x ?? 50]}
+                      onValueChange={(v) => persist({ header_image_x: v[0] })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] text-muted-foreground flex items-center justify-between mb-1">
+                      <span>↕ Posição Y</span>
+                      <span className="font-mono text-[10px]">{model.header_image_y ?? 50}%</span>
+                    </Label>
+                    <Slider
+                      min={0} max={100} step={1}
+                      value={[model.header_image_y ?? 50]}
+                      onValueChange={(v) => persist({ header_image_y: v[0] })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Cor da marca d'água */}
+              <Label className="text-xs text-muted-foreground mb-2 block">Cor da marca d'água</Label>
+              <div className="grid grid-cols-7 gap-2">
+                {(Object.keys(WATERMARK_COLORS) as WatermarkColor[]).map((c) => {
+                  const w = WATERMARK_COLORS[c];
+                  const active = (model.header_overlay_color ?? "nenhuma") === c;
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => persist({ header_overlay_color: c })}
+                      title={w.label}
+                      aria-label={w.label}
+                      className={`h-9 rounded-md border-2 flex items-center justify-center transition relative ${active ? "border-primary scale-110 shadow" : "border-border"}`}
+                      style={{
+                        background: w.hex ?? "transparent",
+                        backgroundImage: w.hex ? undefined : "linear-gradient(45deg, #f3f4f6 25%, transparent 25%, transparent 75%, #f3f4f6 75%), linear-gradient(45deg, #f3f4f6 25%, transparent 25%, transparent 75%, #f3f4f6 75%)",
+                        backgroundSize: w.hex ? undefined : "8px 8px",
+                        backgroundPosition: w.hex ? undefined : "0 0, 4px 4px",
+                      }}
+                    >
+                      {!w.hex && <span className="text-[9px] font-bold text-slate-500">∅</span>}
+                    </button>
+                  );
+                })}
+              </div>
               <p className="text-[10px] text-muted-foreground mt-1">
-                Valores baixos deixam a imagem como marca d'água; altos a deixam destacada.
+                Tinge a imagem para combinar com o esquema do orçamento.
               </p>
             </>
           )}
