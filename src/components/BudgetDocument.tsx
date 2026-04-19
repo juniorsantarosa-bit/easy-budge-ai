@@ -250,7 +250,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-80">Investimento total</p>
-                  <p className="font-black mt-1 leading-none" style={{ fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+                  <p className="font-black mt-1 leading-none" style={{ fontSize: TOTAL_PX, fontFamily: headerFamily }}>{fmtBR(total)}</p>
                 </div>
                 <span className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ background: S.accent, color: S.accentDark }}>
                   À vista
