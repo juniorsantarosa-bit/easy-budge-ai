@@ -95,8 +95,8 @@ function NovoIA() {
             onClick={generate}
             disabled={loading || !serviceType.trim()}
             size="lg"
-            className="mt-6 w-full h-12"
-            style={{ background: "var(--gradient-primary)" }}
+            className="mt-6 w-full h-12 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={serviceType.trim() && !loading ? { background: "var(--gradient-primary)" } : undefined}
           >
             {loading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Sparkles className="h-5 w-5 mr-2" />}
             {loading ? "Gerando modelo..." : "Gerar modelo"}
