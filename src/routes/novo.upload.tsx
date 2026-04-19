@@ -15,11 +15,8 @@ export const Route = createFileRoute("/novo/upload")({
 });
 
 async function extractPdfText(file: File): Promise<string> {
-  // dynamic import — pdfjs-dist worker
   const pdfjs = await import("pdfjs-dist");
-  // @ts-ignore
-  const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
-  pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
   const data = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data }).promise;
   let text = "";
