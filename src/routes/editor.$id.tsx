@@ -216,6 +216,69 @@ function Editor() {
             );
           })}
         </div>
+
+        {/* Imagem de cabeçalho com efeito marca d'água */}
+        <div className="mt-4 pt-4 border-t border-border">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="text-sm font-semibold">Imagem de fundo do cabeçalho</p>
+              <p className="text-[11px] text-muted-foreground">
+                Substitui a cor sólida — pode ficar suave (marca d'água) com o logo por cima
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              {model.header_image_url && (
+                <Button size="sm" variant="ghost" onClick={() => persist({ header_image_url: undefined })}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && uploadHeaderImage(e.target.files[0])}
+                />
+                <Button asChild size="sm" variant="outline">
+                  <span>{headerImgUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Carregar"}</span>
+                </Button>
+              </label>
+            </div>
+          </div>
+
+          {model.header_image_url && (
+            <>
+              <div
+                className="h-16 w-full rounded-lg border overflow-hidden relative mb-3"
+                style={{ background: resolveScheme(model).primaryDark }}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${model.header_image_url})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    opacity: model.header_image_opacity ?? 0.25,
+                  }}
+                />
+              </div>
+              <Label className="text-xs text-muted-foreground flex items-center justify-between mb-1">
+                <span>Intensidade da imagem (marca d'água)</span>
+                <span className="font-mono text-[10px]">{Math.round((model.header_image_opacity ?? 0.25) * 100)}%</span>
+              </Label>
+              <Slider
+                min={5}
+                max={100}
+                step={5}
+                value={[Math.round((model.header_image_opacity ?? 0.25) * 100)]}
+                onValueChange={(v) => persist({ header_image_opacity: v[0] / 100 })}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Valores baixos deixam a imagem como marca d'água; altos a deixam destacada.
+              </p>
+            </>
+          )}
+        </div>
       </Card>
 
       {/* Editable fields */}
