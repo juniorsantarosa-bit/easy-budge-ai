@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { COLOR_SCHEMES, type BudgetModel, type ColorScheme, type LayoutTheme } from "@/lib/storage";
+import { COLOR_SCHEMES, HEADER_FONTS, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont } from "@/lib/storage";
 
 function fmtBR(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -21,16 +21,23 @@ interface Props {
   scheme?: ColorScheme;
 }
 
+// Tamanho base dos valores no documento; o TOTAL será exatamente o dobro deste.
+const VALOR_PX = 16;       // demais valores
+const TOTAL_PX = VALOR_PX * 2; // 32px — o "valor total" é 2x
+
 export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetDocument(
   { model, values, layout, scheme },
   ref,
 ) {
   const L: LayoutTheme = layout ?? model.layout ?? "moderno";
   const S = COLOR_SCHEMES[scheme ?? model.cor_esquema ?? "azul"];
+  const HF: HeaderFont = model.header_font ?? "sans";
+  const headerFamily = HEADER_FONTS[HF].family;
   const today = new Date().toLocaleDateString("pt-BR");
   const total = (model.itens_servico ?? []).reduce((s, it) => s + (it.quantidade ?? 1) * (it.valor_unitario ?? 0), 0);
   const camposSemValor = model.campos.filter((c) => c.tipo !== "valor");
   const camposValor = model.campos.filter((c) => c.tipo === "valor");
+  const subtitulo = model.header_subtitulo ?? "Proposta Comercial";
 
   // ---------- LAYOUT MODERNO (gradient hero) ----------
   if (L === "moderno") {
