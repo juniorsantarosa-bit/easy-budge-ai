@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { HEADER_FONTS, resolveScheme, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont } from "@/lib/storage";
+import { HEADER_FONTS, resolveScheme, WATERMARK_COLORS, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont, type WatermarkColor } from "@/lib/storage";
 
 function fmtBR(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -24,17 +24,29 @@ interface Props {
 const VALOR_PX = 16;
 const TOTAL_PX = VALOR_PX * 2; // 32px
 
-// Renderiza o "fundo" do cabeçalho: imagem com opacidade (marca d'água)
-// sobre uma cor sólida/gradiente. Se não houver imagem, mostra só a cor.
+// Renderiza o "fundo" do cabeçalho: imagem (com zoom/posição) + opacidade
+// (marca d'água) + uma camada de cor opcional sobre a imagem.
 function HeaderBackground({
   color,
   imageUrl,
   opacity,
+  zoom,
+  posX,
+  posY,
+  overlayColor,
 }: {
   color: string;
   imageUrl?: string;
   opacity?: number;
+  zoom?: number;
+  posX?: number;
+  posY?: number;
+  overlayColor?: WatermarkColor;
 }) {
+  const z = zoom ?? 1;
+  const px = posX ?? 50;
+  const py = posY ?? 50;
+  const overlay = overlayColor && overlayColor !== "nenhuma" ? WATERMARK_COLORS[overlayColor].hex : null;
   return (
     <>
       <div className="absolute inset-0" style={{ background: color }} />
@@ -43,13 +55,38 @@ function HeaderBackground({
           className="absolute inset-0"
           style={{
             backgroundImage: `url(${imageUrl})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
+            backgroundSize: `${z * 100}% auto`,
+            backgroundPosition: `${px}% ${py}%`,
+            backgroundRepeat: "no-repeat",
             opacity: opacity ?? 0.25,
           }}
         />
       )}
+      {imageUrl && overlay && (
+        <div
+          className="absolute inset-0"
+          style={{ background: overlay, opacity: 0.35, mixBlendMode: "multiply" }}
+        />
+      )}
     </>
+  );
+}
+
+// Logo com enquadramento (zoom + posição) — usado em todos os layouts
+function FramedLogo({ url, zoom, x, y, className, style }: { url: string; zoom?: number; x?: number; y?: number; className?: string; style?: React.CSSProperties }) {
+  const z = zoom ?? 1;
+  const tx = x ?? 0;
+  const ty = y ?? 0;
+  return (
+    <div className={`overflow-hidden flex items-center justify-center ${className ?? ""}`} style={style}>
+      <img
+        src={url}
+        alt="logo"
+        crossOrigin="anonymous"
+        className="h-full w-full object-contain"
+        style={{ transform: `translate(${tx}%, ${ty}%) scale(${z})`, transformOrigin: "center" }}
+      />
+    </div>
   );
 }
 
@@ -72,6 +109,13 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
   const rodape = model.rodape ?? "";
   const headerImg = model.header_image_url;
   const headerOp = model.header_image_opacity ?? 0.25;
+  const headerZoom = model.header_image_zoom ?? 1;
+  const headerPX = model.header_image_x ?? 50;
+  const headerPY = model.header_image_y ?? 50;
+  const headerOverlay = model.header_overlay_color ?? "nenhuma";
+  const logoZoom = model.logo_zoom ?? 1;
+  const logoX = model.logo_x ?? 0;
+  const logoY = model.logo_y ?? 0;
 
   // ---------- LAYOUT MODERNO (gradient hero) ----------
   if (L === "moderno") {
@@ -79,13 +123,13 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
         <div className="relative px-6 pt-6 pb-8 text-white overflow-hidden">
-          <HeaderBackground color={headerColor} imageUrl={headerImg} opacity={headerOp} />
+          <HeaderBackground color={headerColor} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="absolute top-0 right-0 h-full w-32 opacity-25" style={{ background: `radial-gradient(circle at top right, ${S.accent}, transparent 70%)` }} />
           <div className="relative flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               {model.logo_url ? (
                 <div className="h-16 w-16 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center">
-                  <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+                  <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
                 </div>
               ) : (
                 <div className="h-16 w-16 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center text-2xl font-black">
@@ -204,11 +248,11 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed flex" style={{ minHeight: 500 }}>
         <aside className="relative w-[34%] p-5 text-white flex flex-col overflow-hidden">
-          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} />
+          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="relative flex-1 flex flex-col">
             {model.logo_url ? (
               <div className="h-16 w-16 rounded-lg bg-white p-1.5 flex items-center justify-center mb-4">
-                <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+                <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
               </div>
             ) : (
               <div className="h-16 w-16 rounded-lg bg-white/15 flex items-center justify-center text-2xl font-black mb-4">
@@ -321,6 +365,10 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             color={`linear-gradient(160deg, ${S.primaryDark} 0%, ${S.primary} 60%, ${S.accent} 100%)`}
             imageUrl={headerImg}
             opacity={headerOp}
+            zoom={headerZoom}
+            posX={headerPX}
+            posY={headerPY}
+            overlayColor={headerOverlay}
           />
           {/* faixa diagonal */}
           <div
@@ -342,7 +390,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           {/* logo no canto, sobreposto à faixa branca */}
           {model.logo_url && (
             <div className="absolute bottom-2 right-6 h-16 w-16 rounded-full bg-white p-2 shadow-lg flex items-center justify-center z-10">
-              <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+              <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
             </div>
           )}
         </div>
@@ -451,12 +499,12 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         {/* Cabeçalho duplo: barra superior fina + bloco principal */}
         <div className="h-2" style={{ background: S.accent }} />
         <div className="relative px-6 py-5 overflow-hidden">
-          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} />
+          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="relative flex items-center justify-between text-white">
             <div className="flex items-center gap-4">
               {model.logo_url ? (
                 <div className="h-14 w-14 bg-white p-1.5 rounded shadow flex items-center justify-center">
-                  <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+                  <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
                 </div>
               ) : (
                 <div className="h-14 w-14 bg-white/15 rounded flex items-center justify-center text-xl font-black">
@@ -575,11 +623,11 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
   return (
     <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
       <div className="relative px-7 py-7 overflow-hidden">
-        {headerImg && <HeaderBackground color="white" imageUrl={headerImg} opacity={headerOp} />}
+        {headerImg && <HeaderBackground color="white" imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />}
         <div className="relative flex items-center justify-between pb-4 border-b-2" style={{ borderColor: S.primaryDark }}>
           <div className="flex items-center gap-3">
             {model.logo_url ? (
-              <img src={model.logo_url} alt="logo" className="h-12 w-12 object-contain" crossOrigin="anonymous" />
+              <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-12 w-12" />
             ) : (
               <div className="h-12 w-12 rounded flex items-center justify-center text-xl font-black text-white" style={{ background: S.primaryDark }}>
                 {(model.empresa ?? model.titulo).charAt(0)}

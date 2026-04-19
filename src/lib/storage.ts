@@ -7,6 +7,18 @@ export type ColorScheme =
   | "laranja" | "turquesa" | "dourado" | "grafite" | "indigo" | "vinho";
 export type HeaderFont = "sans" | "serif" | "display" | "mono";
 
+export type WatermarkColor = "nenhuma" | "branco" | "preto" | "azul" | "verde" | "vermelho" | "amarelo";
+
+export const WATERMARK_COLORS: Record<WatermarkColor, { label: string; hex: string | null }> = {
+  nenhuma:  { label: "Sem cor",   hex: null },
+  branco:   { label: "Branco",    hex: "#ffffff" },
+  preto:    { label: "Preto",     hex: "#000000" },
+  azul:     { label: "Azul",      hex: "#1e3a8a" },
+  verde:    { label: "Verde",     hex: "#14532d" },
+  vermelho: { label: "Vermelho",  hex: "#7f1d1d" },
+  amarelo:  { label: "Amarelo",   hex: "#facc15" },
+};
+
 export const HEADER_FONTS: Record<HeaderFont, { label: string; hint: string; family: string }> = {
   sans:    { label: "Moderno",  hint: "Logos limpos e geométricos",       family: "'Inter', system-ui, -apple-system, sans-serif" },
   serif:   { label: "Clássico", hint: "Logos sofisticados, com serifas",  family: "'Playfair Display', 'Georgia', serif" },
@@ -103,6 +115,9 @@ export interface BudgetModel {
   condicoes?: string;
   observacoes?: string;
   logo_url?: string;
+  logo_zoom?: number;           // 1 = ajustado; >1 = aproximado
+  logo_x?: number;              // -100..100 (% deslocamento horizontal)
+  logo_y?: number;              // -100..100 (% deslocamento vertical)
   imagens?: BudgetImage[];
   cor_destaque?: string;
   cor_esquema?: ColorScheme;
@@ -113,6 +128,10 @@ export interface BudgetModel {
   header_subtitulo?: string;
   header_image_url?: string;    // imagem de fundo do cabeçalho
   header_image_opacity?: number; // 0..1 (efeito marca d'água)
+  header_image_zoom?: number;   // 1..3
+  header_image_x?: number;      // 0..100 (% backgroundPosition X)
+  header_image_y?: number;      // 0..100 (% backgroundPosition Y)
+  header_overlay_color?: WatermarkColor; // cor da "marca d'água" sobre a imagem
   rodape?: string;              // texto livre do rodapé
   criado_em: number;
   atualizado_em: number;
