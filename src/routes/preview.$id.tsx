@@ -41,7 +41,7 @@ function Preview() {
     if (!docRef.current || !model) return;
     setDownloading(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
+      const html2canvas = (await import("html2canvas-pro")).default;
       const { jsPDF } = await import("jspdf");
       const canvas = await html2canvas(docRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
       const img = canvas.toDataURL("image/png");
