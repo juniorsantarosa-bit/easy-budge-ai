@@ -91,15 +91,20 @@ function Editor() {
     }
   }
 
+  async function uploadToBucket(file: File, prefix: string): Promise<string> {
+    const path = `${prefix}/${model!.id}-${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from("orcafacil").upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data } = supabase.storage.from("orcafacil").getPublicUrl(path);
+    return data.publicUrl;
+  }
+
   async function uploadLogo(file: File) {
     setLogoUploading(true);
     try {
-      const path = `logos/${model!.id}-${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("orcafacil").upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data } = supabase.storage.from("orcafacil").getPublicUrl(path);
-      const next = persist({ logo_url: data.publicUrl });
-      if (next) toast.success("Logo carregado!");
+      const url = await uploadToBucket(file, "logos");
+      persist({ logo_url: url });
+      toast.success("Logo carregado!");
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao enviar logo");
     } finally {
@@ -107,13 +112,23 @@ function Editor() {
     }
   }
 
+  async function uploadHeaderImage(file: File) {
+    setHeaderImgUploading(true);
+    try {
+      const url = await uploadToBucket(file, "headers");
+      persist({ header_image_url: url, header_image_opacity: model!.header_image_opacity ?? 0.25 });
+      toast.success("Imagem do cabeçalho carregada!");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao enviar imagem");
+    } finally {
+      setHeaderImgUploading(false);
+    }
+  }
+
   async function uploadImage(file: File) {
     try {
-      const path = `imgs/${model!.id}-${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("orcafacil").upload(path, file);
-      if (error) throw error;
-      const { data } = supabase.storage.from("orcafacil").getPublicUrl(path);
-      const imagens = [...(model!.imagens ?? []), { id: uid(), url: data.publicUrl }];
+      const url = await uploadToBucket(file, "imgs");
+      const imagens = [...(model!.imagens ?? []), { id: uid(), url }];
       persist({ imagens });
       toast.success("Imagem adicionada");
     } catch (e: any) {
