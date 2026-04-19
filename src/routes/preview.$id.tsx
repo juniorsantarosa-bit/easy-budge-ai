@@ -40,25 +40,75 @@ function Preview() {
   async function downloadPDF() {
     if (!docRef.current || !model) return;
     setDownloading(true);
+
+    // Container off-screen com largura A4 (794px ≈ 210mm @ 96dpi).
+    // Clonamos o documento para renderizar no tamanho A4 — assim o PDF
+    // fica idêntico ao preview, mas com o layout ajustado para a folha.
+    const A4_WIDTH_PX = 794;
+    const sandbox = document.createElement("div");
+    sandbox.style.position = "fixed";
+    sandbox.style.top = "0";
+    sandbox.style.left = "-10000px";
+    sandbox.style.width = `${A4_WIDTH_PX}px`;
+    sandbox.style.background = "#ffffff";
+    sandbox.style.zIndex = "-1";
+    const clone = docRef.current.cloneNode(true) as HTMLElement;
+    clone.style.width = `${A4_WIDTH_PX}px`;
+    clone.style.maxWidth = "none";
+    sandbox.appendChild(clone);
+    document.body.appendChild(sandbox);
+
     try {
       const html2canvas = (await import("html2canvas-pro")).default;
       const { jsPDF } = await import("jspdf");
-      const canvas = await html2canvas(docRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-      const img = canvas.toDataURL("image/png");
+
+      // Aguarda fontes/imagens carregarem antes de capturar
+      if ((document as any).fonts?.ready) {
+        try { await (document as any).fonts.ready; } catch {}
+      }
+      await new Promise((r) => setTimeout(r, 100));
+
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        windowWidth: A4_WIDTH_PX,
+        width: A4_WIDTH_PX,
+      });
+
       const pdf = new jsPDF("p", "mm", "a4");
-      const pageW = 210;
-      const pageH = 297;
-      const imgH = (canvas.height * pageW) / canvas.width;
-      let y = 0;
-      let remaining = imgH;
-      while (remaining > 0) {
-        pdf.addImage(img, "PNG", 0, y, pageW, imgH);
-        remaining -= pageH;
-        if (remaining > 0) {
-          pdf.addPage();
-          y -= pageH;
+      const pageW = 210; // A4 width mm
+      const pageH = 297; // A4 height mm
+
+      // Altura proporcional da imagem em mm (full bleed: 0 margem)
+      const imgFullH = (canvas.height * pageW) / canvas.width;
+
+      if (imgFullH <= pageH) {
+        // Cabe em uma página só
+        const img = canvas.toDataURL("image/png");
+        pdf.addImage(img, "PNG", 0, 0, pageW, imgFullH);
+      } else {
+        // Multi-página: fatia o canvas em pedaços de altura = pageH
+        const pxPerMm = canvas.width / pageW;
+        const pageHpx = Math.floor(pageH * pxPerMm);
+        let renderedPx = 0;
+        while (renderedPx < canvas.height) {
+          const sliceH = Math.min(pageHpx, canvas.height - renderedPx);
+          const pageCanvas = document.createElement("canvas");
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sliceH;
+          const ctx = pageCanvas.getContext("2d")!;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+          const sliceImg = pageCanvas.toDataURL("image/png");
+          const sliceMmH = (sliceH * pageW) / canvas.width;
+          if (renderedPx > 0) pdf.addPage();
+          pdf.addImage(sliceImg, "PNG", 0, 0, pageW, sliceMmH);
+          renderedPx += sliceH;
         }
       }
+
       pdf.save(`orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.pdf`);
 
       // Salva no histórico de orçamentos emitidos
@@ -77,6 +127,7 @@ function Preview() {
     } catch (e: any) {
       toast.error("Erro ao gerar PDF: " + e.message);
     } finally {
+      if (sandbox.parentNode) sandbox.parentNode.removeChild(sandbox);
       setDownloading(false);
     }
   }
