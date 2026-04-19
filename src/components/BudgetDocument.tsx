@@ -365,6 +365,10 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             color={`linear-gradient(160deg, ${S.primaryDark} 0%, ${S.primary} 60%, ${S.accent} 100%)`}
             imageUrl={headerImg}
             opacity={headerOp}
+            zoom={headerZoom}
+            posX={headerPX}
+            posY={headerPY}
+            overlayColor={headerOverlay}
           />
           {/* faixa diagonal */}
           <div
@@ -619,7 +623,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
   return (
     <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
       <div className="relative px-7 py-7 overflow-hidden">
-        {headerImg && <HeaderBackground color="white" imageUrl={headerImg} opacity={headerOp} />}
+        {headerImg && <HeaderBackground color="white" imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />}
         <div className="relative flex items-center justify-between pb-4 border-b-2" style={{ borderColor: S.primaryDark }}>
           <div className="flex items-center gap-3">
             {model.logo_url ? (
