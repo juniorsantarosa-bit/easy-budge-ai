@@ -504,7 +504,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
               style={{ background: `linear-gradient(120deg, ${S.primaryDark}, ${S.accent})` }}
             >
               <p className="text-[10px] uppercase tracking-[0.3em] font-black opacity-90">Investimento</p>
-              <p className="font-black leading-none mt-1" style={{ fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+              <p className="font-black leading-none mt-1" style={{ fontSize: TOTAL_PX, fontFamily: headerFamily }}>{fmtBR(total)}</p>
             </div>
           )}
 
