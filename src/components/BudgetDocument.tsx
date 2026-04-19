@@ -138,7 +138,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
 
   // ---------- LAYOUT MODERNO (gradient hero) ----------
   if (L === "moderno") {
-    const headerColor = `linear-gradient(135deg, ${S.primaryDark} 0%, ${S.primary} 100%)`;
+    const headerColor = headerBgHex ?? `linear-gradient(135deg, ${S.primaryDark} 0%, ${S.primary} 100%)`;
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
         <div className="relative px-6 pt-6 pb-8 text-white overflow-hidden">
