@@ -141,7 +141,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
     const headerColor = headerBgHex ?? `linear-gradient(135deg, ${S.primaryDark} 0%, ${S.primary} 100%)`;
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
-        <div className="relative px-6 pt-6 pb-8 text-white overflow-hidden">
+        <div className="relative px-6 pt-6 pb-8 overflow-hidden" style={{ color: headerTextColor }}>
           <HeaderBackground color={headerColor} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="absolute top-0 right-0 h-full w-32 opacity-25" style={{ background: `radial-gradient(circle at top right, ${S.accent}, transparent 70%)` }} />
           <div className="relative flex items-start justify-between gap-3">
