@@ -723,7 +723,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
               <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500 font-bold">Total</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Investimento desta proposta</p>
             </div>
-            <p className="font-black tracking-tight leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+            <p className="font-black tracking-tight leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX, fontFamily: headerFamily }}>{fmtBR(total)}</p>
           </div>
         )}
 
