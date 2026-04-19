@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, Sparkles, Save, Trash2, Plus, Image as ImgIcon, X, Loader2, Upload } from "lucide-react";
-import { getModel, saveModel, type BudgetModel, type BudgetField, uid } from "@/lib/storage";
+import { getModel, saveModel, type BudgetModel, type BudgetField, type ColorScheme, type LayoutTheme, COLOR_SCHEMES, uid } from "@/lib/storage";
 import { aiImprovements } from "@/server/ai";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { BudgetDocument } from "@/components/BudgetDocument";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -290,6 +291,54 @@ function Editor() {
         rows={2}
         className="mt-2"
       />
+
+      {/* Personalização visual: layout + cor */}
+      <h2 className="font-semibold text-sm mb-2 mt-6 flex items-center gap-2">
+        🎨 Personalize o visual
+      </h2>
+      <p className="text-xs text-muted-foreground mb-3">Escolha o layout e a cor que mais combina com seu negócio</p>
+
+      <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-2">Layout</p>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {(["moderno", "elegante", "minimal"] as LayoutTheme[]).map((lay) => {
+          const active = (model.layout ?? "moderno") === lay;
+          return (
+            <button
+              key={lay}
+              onClick={() => persist({ layout: lay })}
+              className={`rounded-xl overflow-hidden border-2 transition ${active ? "border-primary shadow-md" : "border-border"}`}
+            >
+              <div className="aspect-[3/4] bg-white relative overflow-hidden pointer-events-none">
+                <div className="absolute inset-0 scale-[0.28] origin-top-left" style={{ width: "357%", height: "357%" }}>
+                  <BudgetDocument model={{ ...model, layout: lay }} values={values} />
+                </div>
+              </div>
+              <p className={`text-[11px] py-1.5 font-semibold capitalize ${active ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{lay}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-2">Cor principal</p>
+      <div className="grid grid-cols-6 gap-2 mb-2">
+        {(Object.keys(COLOR_SCHEMES) as ColorScheme[]).map((c) => {
+          const s = COLOR_SCHEMES[c];
+          const active = (model.cor_esquema ?? "azul") === c;
+          return (
+            <button
+              key={c}
+              onClick={() => persist({ cor_esquema: c })}
+              className={`aspect-square rounded-xl flex items-center justify-center transition ${active ? "ring-2 ring-offset-2 ring-primary scale-105" : ""}`}
+              style={{ background: `linear-gradient(135deg, ${s.primaryDark}, ${s.primary})` }}
+              title={s.label}
+              aria-label={s.label}
+            >
+              {active && <span className="text-white text-lg">✓</span>}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-muted-foreground mb-4">{COLOR_SCHEMES[model.cor_esquema ?? "azul"].label}</p>
 
       {/* AI improvements + Save template */}
       <div className="grid grid-cols-2 gap-2 mt-6">
