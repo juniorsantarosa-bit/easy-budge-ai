@@ -411,7 +411,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           </div>
           {/* logo no canto, sobreposto à faixa branca */}
           {model.logo_url && (
-            <div className="absolute bottom-2 right-6 h-16 w-16 rounded-full bg-white p-2 shadow-lg flex items-center justify-center z-10">
+            <div className="absolute bottom-2 right-6 h-16 w-16 rounded-full bg-white shadow-lg overflow-hidden z-10">
               <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
             </div>
           )}
