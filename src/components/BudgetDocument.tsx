@@ -33,7 +33,8 @@ interface Props {
 }
 
 const VALOR_PX = 16;
-const TOTAL_PX = VALOR_PX * 2; // 32px
+// Total da proposta: 50% do tamanho anterior (antes era 2x dos demais valores)
+const TOTAL_PX = VALOR_PX; // 16px — mesmo tamanho dos demais valores
 
 // Renderiza o "fundo" do cabeçalho: imagem (com zoom/posição) + opacidade
 // (marca d'água) + uma camada de cor opcional sobre a imagem.
