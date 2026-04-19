@@ -1,8 +1,10 @@
 // LocalStorage management for budget models (no auth in MVP)
 export type FieldType = "texto" | "data" | "valor" | "numero" | "longo";
 
-export type LayoutTheme = "moderno" | "elegante" | "minimal";
-export type ColorScheme = "azul" | "verde" | "roxo" | "vermelho" | "preto" | "rosa";
+export type LayoutTheme = "moderno" | "elegante" | "minimal" | "magazine" | "corporativo";
+export type ColorScheme =
+  | "azul" | "verde" | "roxo" | "vermelho" | "preto" | "rosa"
+  | "laranja" | "turquesa" | "dourado" | "grafite" | "indigo" | "vinho";
 export type HeaderFont = "sans" | "serif" | "display" | "mono";
 
 export const HEADER_FONTS: Record<HeaderFont, { label: string; hint: string; family: string }> = {
@@ -19,7 +21,56 @@ export const COLOR_SCHEMES: Record<ColorScheme, { primary: string; primaryDark: 
   vermelho: { label: "Vermelho", primary: "#dc2626", primaryDark: "#b91c1c", accent: "#f59e0b", accentDark: "#d97706", soft: "#fef2f2", softAccent: "#fffbeb" },
   preto:    { label: "Preto",    primary: "#1f2937", primaryDark: "#111827", accent: "#facc15", accentDark: "#ca8a04", soft: "#f3f4f6", softAccent: "#fefce8" },
   rosa:     { label: "Rosa",     primary: "#db2777", primaryDark: "#be185d", accent: "#8b5cf6", accentDark: "#7c3aed", soft: "#fdf2f8", softAccent: "#f5f3ff" },
+  laranja:  { label: "Laranja",  primary: "#ea580c", primaryDark: "#c2410c", accent: "#0ea5e9", accentDark: "#0369a1", soft: "#fff7ed", softAccent: "#f0f9ff" },
+  turquesa: { label: "Turquesa", primary: "#0d9488", primaryDark: "#0f766e", accent: "#f43f5e", accentDark: "#be123c", soft: "#f0fdfa", softAccent: "#fff1f2" },
+  dourado:  { label: "Dourado",  primary: "#b45309", primaryDark: "#92400e", accent: "#1f2937", accentDark: "#111827", soft: "#fffbeb", softAccent: "#f3f4f6" },
+  grafite:  { label: "Grafite",  primary: "#475569", primaryDark: "#334155", accent: "#06b6d4", accentDark: "#0891b2", soft: "#f1f5f9", softAccent: "#ecfeff" },
+  indigo:   { label: "Indigo",   primary: "#4f46e5", primaryDark: "#4338ca", accent: "#fbbf24", accentDark: "#d97706", soft: "#eef2ff", softAccent: "#fffbeb" },
+  vinho:    { label: "Vinho",    primary: "#9f1239", primaryDark: "#881337", accent: "#d4a373", accentDark: "#a8763e", soft: "#fff1f2", softAccent: "#fefae0" },
 };
+
+// Helpers para cor customizada (override do esquema pré-definido)
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const h = hex.replace("#", "");
+  const v = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  return {
+    r: parseInt(v.slice(0, 2), 16) || 0,
+    g: parseInt(v.slice(2, 4), 16) || 0,
+    b: parseInt(v.slice(4, 6), 16) || 0,
+  };
+}
+export function shadeHex(hex: string, percent: number): string {
+  // percent negativo = mais escuro; positivo = mais claro
+  const { r, g, b } = hexToRgb(hex);
+  const adj = (c: number) => {
+    const v = percent < 0 ? c * (1 + percent) : c + (255 - c) * percent;
+    return Math.max(0, Math.min(255, Math.round(v)));
+  };
+  const toHex = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${toHex(adj(r))}${toHex(adj(g))}${toHex(adj(b))}`;
+}
+export function softHex(hex: string): string {
+  const { r, g, b } = hexToRgb(hex);
+  // mistura com branco a 92%
+  const mix = (c: number) => Math.round(c * 0.08 + 255 * 0.92);
+  const toHex = (n: number) => mix(n).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+export function resolveScheme(model: { cor_esquema?: ColorScheme; cor_primaria?: string; cor_secundaria?: string }) {
+  const base = COLOR_SCHEMES[model.cor_esquema ?? "azul"];
+  const primary = model.cor_primaria || base.primary;
+  const accent = model.cor_secundaria || base.accent;
+  return {
+    label: base.label,
+    primary,
+    primaryDark: shadeHex(primary, -0.15),
+    accent,
+    accentDark: shadeHex(accent, -0.2),
+    soft: softHex(primary),
+    softAccent: softHex(accent),
+  };
+}
 
 export interface BudgetField {
   chave: string;
@@ -55,9 +106,14 @@ export interface BudgetModel {
   imagens?: BudgetImage[];
   cor_destaque?: string;
   cor_esquema?: ColorScheme;
+  cor_primaria?: string;        // hex override (#rrggbb)
+  cor_secundaria?: string;      // hex override (#rrggbb)
   layout?: LayoutTheme;
   header_font?: HeaderFont;
   header_subtitulo?: string;
+  header_image_url?: string;    // imagem de fundo do cabeçalho
+  header_image_opacity?: number; // 0..1 (efeito marca d'água)
+  rodape?: string;              // texto livre do rodapé
   criado_em: number;
   atualizado_em: number;
 }
