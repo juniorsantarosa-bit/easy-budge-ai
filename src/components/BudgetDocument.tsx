@@ -273,11 +273,11 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           <HeaderBackground color={headerBgHex ?? S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="relative flex-1 flex flex-col">
             {model.logo_url ? (
-              <div className="h-16 w-16 rounded-lg bg-white overflow-hidden mb-4">
+              <div className="h-16 w-16 rounded-md bg-white overflow-hidden mb-4">
                 <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
               </div>
             ) : (
-              <div className="h-16 w-16 rounded-lg bg-white/15 flex items-center justify-center text-2xl font-black mb-4">
+              <div className="h-16 w-16 rounded-md bg-white/15 flex items-center justify-center text-2xl font-black mb-4">
                 {(model.empresa ?? model.titulo).charAt(0)}
               </div>
             )}
