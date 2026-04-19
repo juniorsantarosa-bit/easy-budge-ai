@@ -9,12 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OrcamentosRouteImport } from './routes/orcamentos'
+import { Route as ModelosRouteImport } from './routes/modelos'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PreviewIdRouteImport } from './routes/preview.$id'
 import { Route as NovoUploadRouteImport } from './routes/novo.upload'
 import { Route as NovoIaRouteImport } from './routes/novo.ia'
 import { Route as EditorIdRouteImport } from './routes/editor.$id'
 
+const OrcamentosRoute = OrcamentosRouteImport.update({
+  id: '/orcamentos',
+  path: '/orcamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModelosRoute = ModelosRouteImport.update({
+  id: '/modelos',
+  path: '/modelos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +55,8 @@ const EditorIdRoute = EditorIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/modelos': typeof ModelosRoute
+  '/orcamentos': typeof OrcamentosRoute
   '/editor/$id': typeof EditorIdRoute
   '/novo/ia': typeof NovoIaRoute
   '/novo/upload': typeof NovoUploadRoute
@@ -50,6 +64,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/modelos': typeof ModelosRoute
+  '/orcamentos': typeof OrcamentosRoute
   '/editor/$id': typeof EditorIdRoute
   '/novo/ia': typeof NovoIaRoute
   '/novo/upload': typeof NovoUploadRoute
@@ -58,6 +74,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/modelos': typeof ModelosRoute
+  '/orcamentos': typeof OrcamentosRoute
   '/editor/$id': typeof EditorIdRoute
   '/novo/ia': typeof NovoIaRoute
   '/novo/upload': typeof NovoUploadRoute
@@ -65,12 +83,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/editor/$id' | '/novo/ia' | '/novo/upload' | '/preview/$id'
+  fullPaths:
+    | '/'
+    | '/modelos'
+    | '/orcamentos'
+    | '/editor/$id'
+    | '/novo/ia'
+    | '/novo/upload'
+    | '/preview/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/editor/$id' | '/novo/ia' | '/novo/upload' | '/preview/$id'
+  to:
+    | '/'
+    | '/modelos'
+    | '/orcamentos'
+    | '/editor/$id'
+    | '/novo/ia'
+    | '/novo/upload'
+    | '/preview/$id'
   id:
     | '__root__'
     | '/'
+    | '/modelos'
+    | '/orcamentos'
     | '/editor/$id'
     | '/novo/ia'
     | '/novo/upload'
@@ -79,6 +113,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ModelosRoute: typeof ModelosRoute
+  OrcamentosRoute: typeof OrcamentosRoute
   EditorIdRoute: typeof EditorIdRoute
   NovoIaRoute: typeof NovoIaRoute
   NovoUploadRoute: typeof NovoUploadRoute
@@ -87,6 +123,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/orcamentos': {
+      id: '/orcamentos'
+      path: '/orcamentos'
+      fullPath: '/orcamentos'
+      preLoaderRoute: typeof OrcamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/modelos': {
+      id: '/modelos'
+      path: '/modelos'
+      fullPath: '/modelos'
+      preLoaderRoute: typeof ModelosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -127,6 +177,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ModelosRoute: ModelosRoute,
+  OrcamentosRoute: OrcamentosRoute,
   EditorIdRoute: EditorIdRoute,
   NovoIaRoute: NovoIaRoute,
   NovoUploadRoute: NovoUploadRoute,
@@ -135,12 +187,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

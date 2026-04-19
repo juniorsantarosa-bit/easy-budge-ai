@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Pencil } from "lucide-react";
-import { getModel, type BudgetModel } from "@/lib/storage";
+import { addHistory, getModel, uid, type BudgetModel } from "@/lib/storage";
 import { BudgetDocument } from "@/components/BudgetDocument";
 import { toast } from "sonner";
 
@@ -60,6 +60,19 @@ function Preview() {
         }
       }
       pdf.save(`orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+
+      // Salva no histórico de orçamentos emitidos
+      const total = (model.itens_servico ?? []).reduce((s, it) => s + (it.quantidade ?? 1) * (it.valor_unitario ?? 0), 0);
+      const clienteCampo = model.campos.find((c) => /cliente|nome/i.test(c.chave));
+      addHistory({
+        id: uid(),
+        modelo_id: model.id,
+        modelo_titulo: model.titulo,
+        cliente: clienteCampo ? values[clienteCampo.chave] : undefined,
+        total,
+        emitido_em: Date.now(),
+      });
+
       toast.success("PDF baixado!");
     } catch (e: any) {
       toast.error("Erro ao gerar PDF: " + e.message);

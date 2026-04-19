@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, Sparkles, Save, Trash2, Plus, Image as ImgIcon, X, Loader2, Upload } from "lucide-react";
-import { getModel, saveModel, type BudgetModel, type BudgetField, type ColorScheme, type LayoutTheme, COLOR_SCHEMES, uid } from "@/lib/storage";
+import { getModel, saveModel, type BudgetModel, type BudgetField, type ColorScheme, type LayoutTheme, type HeaderFont, COLOR_SCHEMES, HEADER_FONTS, uid } from "@/lib/storage";
 import { aiImprovements } from "@/server/ai";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { BudgetDocument } from "@/components/BudgetDocument";
@@ -129,9 +129,11 @@ function Editor() {
         </Button>
       }
     >
-      {/* Logo card */}
+      {/* Cabeçalho do orçamento (logo + textos + fonte) */}
       <Card className="p-4 mb-4">
-        <div className="flex items-center gap-3">
+        <h2 className="text-sm font-semibold mb-3">Cabeçalho do orçamento</h2>
+
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-soft overflow-hidden">
             {model.logo_url ? (
               <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" />
@@ -154,6 +156,44 @@ function Editor() {
               <span>{logoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Carregar"}</span>
             </Button>
           </label>
+        </div>
+
+        <Label className="text-xs text-muted-foreground">Nome que aparece ao lado do logo</Label>
+        <Input
+          value={model.empresa ?? ""}
+          onChange={(e) => persist({ empresa: e.target.value })}
+          placeholder="Sua empresa ou seu nome"
+          className="mt-1 h-10 mb-3"
+        />
+
+        <Label className="text-xs text-muted-foreground">Subtítulo (acima do nome)</Label>
+        <Input
+          value={model.header_subtitulo ?? ""}
+          onChange={(e) => persist({ header_subtitulo: e.target.value })}
+          placeholder="Ex: Proposta Comercial"
+          className="mt-1 h-10 mb-3"
+        />
+
+        <Label className="text-xs text-muted-foreground mb-1 block">Fonte do cabeçalho</Label>
+        <p className="text-[10px] text-muted-foreground mb-2">
+          Escolha a fonte que combina com a aparência do seu logo
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {(Object.keys(HEADER_FONTS) as HeaderFont[]).map((f) => {
+            const cur = (model.header_font ?? "sans") === f;
+            return (
+              <button
+                key={f}
+                onClick={() => persist({ header_font: f })}
+                className={`rounded-lg border-2 p-2 text-left transition ${cur ? "border-primary bg-primary-soft" : "border-border"}`}
+              >
+                <p className="text-base font-bold leading-tight" style={{ fontFamily: HEADER_FONTS[f].family }}>
+                  {model.empresa || "Aa Bb"}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{HEADER_FONTS[f].label}</p>
+              </button>
+            );
+          })}
         </div>
       </Card>
 

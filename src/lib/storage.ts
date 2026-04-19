@@ -3,6 +3,14 @@ export type FieldType = "texto" | "data" | "valor" | "numero" | "longo";
 
 export type LayoutTheme = "moderno" | "elegante" | "minimal";
 export type ColorScheme = "azul" | "verde" | "roxo" | "vermelho" | "preto" | "rosa";
+export type HeaderFont = "sans" | "serif" | "display" | "mono";
+
+export const HEADER_FONTS: Record<HeaderFont, { label: string; hint: string; family: string }> = {
+  sans:    { label: "Moderno",  hint: "Logos limpos e geométricos",       family: "'Inter', system-ui, -apple-system, sans-serif" },
+  serif:   { label: "Clássico", hint: "Logos sofisticados, com serifas",  family: "'Playfair Display', 'Georgia', serif" },
+  display: { label: "Marcante", hint: "Logos fortes, gordos, impactantes", family: "'Archivo Black', 'Impact', sans-serif" },
+  mono:    { label: "Técnico",  hint: "Logos minimalistas e tech",        family: "'JetBrains Mono', 'Courier New', monospace" },
+};
 
 export const COLOR_SCHEMES: Record<ColorScheme, { primary: string; primaryDark: string; accent: string; accentDark: string; soft: string; softAccent: string; label: string }> = {
   azul:     { label: "Azul",     primary: "#2563eb", primaryDark: "#1d4ed8", accent: "#fb923c", accentDark: "#ea580c", soft: "#eff6ff", softAccent: "#fff7ed" },
@@ -48,11 +56,43 @@ export interface BudgetModel {
   cor_destaque?: string;
   cor_esquema?: ColorScheme;
   layout?: LayoutTheme;
+  header_font?: HeaderFont;
+  header_subtitulo?: string;
   criado_em: number;
   atualizado_em: number;
 }
 
+export interface BudgetHistory {
+  id: string;
+  modelo_id: string;
+  modelo_titulo: string;
+  cliente?: string;
+  total: number;
+  emitido_em: number;
+}
+
 const KEY = "orcafacil:modelos";
+const KEY_HIST = "orcafacil:historico";
+
+// ----- Histórico de orçamentos emitidos em PDF -----
+export function getHistory(): BudgetHistory[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(KEY_HIST) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+export function addHistory(h: BudgetHistory) {
+  const all = getHistory();
+  all.unshift(h);
+  localStorage.setItem(KEY_HIST, JSON.stringify(all.slice(0, 100)));
+}
+
+export function deleteHistory(id: string) {
+  localStorage.setItem(KEY_HIST, JSON.stringify(getHistory().filter((h) => h.id !== id)));
+}
 
 export function getModels(): BudgetModel[] {
   if (typeof window === "undefined") return [];
