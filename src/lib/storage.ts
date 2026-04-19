@@ -177,7 +177,8 @@ export interface BudgetModel {
   header_image_zoom?: number;   // 1..3
   header_image_x?: number;      // 0..100 (% backgroundPosition X)
   header_image_y?: number;      // 0..100 (% backgroundPosition Y)
-  header_overlay_color?: WatermarkColor; // cor da "marca d'água" sobre a imagem
+  header_overlay_color?: WatermarkColor; // (legado) cor da "tinta" sobre a imagem
+  header_bg_color?: HeaderBgColor; // cor de fundo do cabeçalho (nova: alinhada à paleta)
   rodape?: string;              // texto livre do rodapé
   criado_em: number;
   atualizado_em: number;
