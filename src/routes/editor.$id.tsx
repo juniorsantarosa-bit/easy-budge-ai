@@ -6,11 +6,16 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Sparkles, Save, Trash2, Plus, Image as ImgIcon, X, Loader2, Upload } from "lucide-react";
-import { getModel, saveModel, type BudgetModel, type BudgetField, type ColorScheme, type LayoutTheme, type HeaderFont, COLOR_SCHEMES, HEADER_FONTS, uid } from "@/lib/storage";
+import { Eye, Sparkles, Save, Trash2, Plus, Image as ImgIcon, X, Loader2 } from "lucide-react";
+import {
+  getModel, saveModel, type BudgetModel, type BudgetField, type ColorScheme,
+  type LayoutTheme, type HeaderFont,
+  COLOR_SCHEMES, HEADER_FONTS, uid, resolveScheme,
+} from "@/lib/storage";
 import { aiImprovements } from "@/server/ai";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { BudgetDocument } from "@/components/BudgetDocument";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,6 +32,7 @@ function Editor() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiList, setAiList] = useState<any[]>([]);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [headerImgUploading, setHeaderImgUploading] = useState(false);
 
   useEffect(() => {
     const m = getModel(id);
@@ -85,15 +91,20 @@ function Editor() {
     }
   }
 
+  async function uploadToBucket(file: File, prefix: string): Promise<string> {
+    const path = `${prefix}/${model!.id}-${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from("orcafacil").upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data } = supabase.storage.from("orcafacil").getPublicUrl(path);
+    return data.publicUrl;
+  }
+
   async function uploadLogo(file: File) {
     setLogoUploading(true);
     try {
-      const path = `logos/${model!.id}-${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("orcafacil").upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data } = supabase.storage.from("orcafacil").getPublicUrl(path);
-      const next = persist({ logo_url: data.publicUrl });
-      if (next) toast.success("Logo carregado!");
+      const url = await uploadToBucket(file, "logos");
+      persist({ logo_url: url });
+      toast.success("Logo carregado!");
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao enviar logo");
     } finally {
@@ -101,13 +112,23 @@ function Editor() {
     }
   }
 
+  async function uploadHeaderImage(file: File) {
+    setHeaderImgUploading(true);
+    try {
+      const url = await uploadToBucket(file, "headers");
+      persist({ header_image_url: url, header_image_opacity: model!.header_image_opacity ?? 0.25 });
+      toast.success("Imagem do cabeçalho carregada!");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao enviar imagem");
+    } finally {
+      setHeaderImgUploading(false);
+    }
+  }
+
   async function uploadImage(file: File) {
     try {
-      const path = `imgs/${model!.id}-${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("orcafacil").upload(path, file);
-      if (error) throw error;
-      const { data } = supabase.storage.from("orcafacil").getPublicUrl(path);
-      const imagens = [...(model!.imagens ?? []), { id: uid(), url: data.publicUrl }];
+      const url = await uploadToBucket(file, "imgs");
+      const imagens = [...(model!.imagens ?? []), { id: uid(), url }];
       persist({ imagens });
       toast.success("Imagem adicionada");
     } catch (e: any) {
@@ -194,6 +215,69 @@ function Editor() {
               </button>
             );
           })}
+        </div>
+
+        {/* Imagem de cabeçalho com efeito marca d'água */}
+        <div className="mt-4 pt-4 border-t border-border">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="text-sm font-semibold">Imagem de fundo do cabeçalho</p>
+              <p className="text-[11px] text-muted-foreground">
+                Substitui a cor sólida — pode ficar suave (marca d'água) com o logo por cima
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              {model.header_image_url && (
+                <Button size="sm" variant="ghost" onClick={() => persist({ header_image_url: undefined })}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && uploadHeaderImage(e.target.files[0])}
+                />
+                <Button asChild size="sm" variant="outline">
+                  <span>{headerImgUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Carregar"}</span>
+                </Button>
+              </label>
+            </div>
+          </div>
+
+          {model.header_image_url && (
+            <>
+              <div
+                className="h-16 w-full rounded-lg border overflow-hidden relative mb-3"
+                style={{ background: resolveScheme(model).primaryDark }}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${model.header_image_url})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    opacity: model.header_image_opacity ?? 0.25,
+                  }}
+                />
+              </div>
+              <Label className="text-xs text-muted-foreground flex items-center justify-between mb-1">
+                <span>Intensidade da imagem (marca d'água)</span>
+                <span className="font-mono text-[10px]">{Math.round((model.header_image_opacity ?? 0.25) * 100)}%</span>
+              </Label>
+              <Slider
+                min={5}
+                max={100}
+                step={5}
+                value={[Math.round((model.header_image_opacity ?? 0.25) * 100)]}
+                onValueChange={(v) => persist({ header_image_opacity: v[0] / 100 })}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Valores baixos deixam a imagem como marca d'água; altos a deixam destacada.
+              </p>
+            </>
+          )}
         </div>
       </Card>
 
@@ -316,7 +400,7 @@ function Editor() {
         </label>
       </div>
 
-      {/* Conditions */}
+      {/* Conditions + footer */}
       <h2 className="font-semibold text-sm mb-2 mt-6">Condições e observações</h2>
       <Textarea
         value={model.condicoes ?? ""}
@@ -332,53 +416,123 @@ function Editor() {
         className="mt-2"
       />
 
+      <h2 className="font-semibold text-sm mb-2 mt-6">Rodapé do orçamento</h2>
+      <p className="text-xs text-muted-foreground mb-2">
+        Texto que aparece no fim do documento. Ex.: contato, CNPJ, endereço, redes sociais.
+      </p>
+      <Textarea
+        value={model.rodape ?? ""}
+        onChange={(e) => persist({ rodape: e.target.value })}
+        placeholder={`Ex: contato@suaempresa.com · (11) 99999-9999\nCNPJ 00.000.000/0001-00 · @suaempresa`}
+        rows={3}
+      />
+
       {/* Personalização visual: layout + cor */}
       <h2 className="font-semibold text-sm mb-2 mt-6 flex items-center gap-2">
         🎨 Personalize o visual
       </h2>
-      <p className="text-xs text-muted-foreground mb-3">Escolha o layout e a cor que mais combina com seu negócio</p>
+      <p className="text-xs text-muted-foreground mb-3">
+        Escolha o layout, as cores e a fonte que mais combinam com seu negócio
+      </p>
 
-      <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-2">Layout</p>
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        {(["moderno", "elegante", "minimal"] as LayoutTheme[]).map((lay) => {
-          const active = (model.layout ?? "moderno") === lay;
-          return (
-            <button
-              key={lay}
-              onClick={() => persist({ layout: lay })}
-              className={`rounded-xl overflow-hidden border-2 transition ${active ? "border-primary shadow-md" : "border-border"}`}
-            >
-              <div className="aspect-[3/4] bg-white relative overflow-hidden pointer-events-none">
-                <div className="absolute inset-0 scale-[0.28] origin-top-left" style={{ width: "357%", height: "357%" }}>
-                  <BudgetDocument model={{ ...model, layout: lay }} values={values} />
+      <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-2">
+        Layout ({(["moderno", "elegante", "minimal", "magazine", "corporativo"] as const).length} opções)
+      </p>
+      <div className="-mx-4 px-4 overflow-x-auto pb-2 mb-4">
+        <div className="flex gap-2" style={{ width: "max-content" }}>
+          {(["moderno", "elegante", "minimal", "magazine", "corporativo"] as LayoutTheme[]).map((lay) => {
+            const active = (model.layout ?? "moderno") === lay;
+            return (
+              <button
+                key={lay}
+                onClick={() => persist({ layout: lay })}
+                className={`rounded-xl overflow-hidden border-2 transition shrink-0 ${active ? "border-primary shadow-md" : "border-border"}`}
+                style={{ width: 110 }}
+              >
+                <div className="aspect-[3/4] bg-white relative overflow-hidden pointer-events-none">
+                  <div className="absolute inset-0 scale-[0.22] origin-top-left" style={{ width: "455%", height: "455%" }}>
+                    <BudgetDocument model={{ ...model, layout: lay }} values={values} />
+                  </div>
                 </div>
-              </div>
-              <p className={`text-[11px] py-1.5 font-semibold capitalize ${active ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{lay}</p>
-            </button>
-          );
-        })}
+                <p className={`text-[11px] py-1.5 font-semibold capitalize text-center ${active ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                  {lay}
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-2">Cor principal</p>
-      <div className="grid grid-cols-6 gap-2 mb-2">
+      {/* Paleta pré-definida */}
+      <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-2">
+        Paleta sugerida ({Object.keys(COLOR_SCHEMES).length} cores)
+      </p>
+      <div className="grid grid-cols-6 gap-2 mb-3">
         {(Object.keys(COLOR_SCHEMES) as ColorScheme[]).map((c) => {
           const s = COLOR_SCHEMES[c];
-          const active = (model.cor_esquema ?? "azul") === c;
+          const active = (model.cor_esquema ?? "azul") === c && !model.cor_primaria && !model.cor_secundaria;
           return (
             <button
               key={c}
-              onClick={() => persist({ cor_esquema: c })}
-              className={`aspect-square rounded-xl flex items-center justify-center transition ${active ? "ring-2 ring-offset-2 ring-primary scale-105" : ""}`}
-              style={{ background: `linear-gradient(135deg, ${s.primaryDark}, ${s.primary})` }}
+              onClick={() => persist({ cor_esquema: c, cor_primaria: undefined, cor_secundaria: undefined })}
+              className={`aspect-square rounded-xl flex items-center justify-center transition relative overflow-hidden ${active ? "ring-2 ring-offset-2 ring-primary scale-105" : ""}`}
+              style={{ background: `linear-gradient(135deg, ${s.primary} 50%, ${s.accent} 50%)` }}
               title={s.label}
               aria-label={s.label}
             >
-              {active && <span className="text-white text-lg">✓</span>}
+              {active && <span className="text-white text-lg drop-shadow">✓</span>}
             </button>
           );
         })}
       </div>
-      <p className="text-[10px] text-muted-foreground mb-4">{COLOR_SCHEMES[model.cor_esquema ?? "azul"].label}</p>
+
+      {/* Cor 1 e Cor 2 personalizadas */}
+      <div className="grid grid-cols-2 gap-3 mb-2">
+        <div>
+          <Label className="text-xs text-muted-foreground mb-1 block">1ª cor (principal)</Label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={model.cor_primaria || COLOR_SCHEMES[model.cor_esquema ?? "azul"].primary}
+              onChange={(e) => persist({ cor_primaria: e.target.value })}
+              className="h-10 w-12 rounded-md border border-border cursor-pointer p-0.5 bg-transparent"
+            />
+            <Input
+              value={model.cor_primaria || ""}
+              placeholder={COLOR_SCHEMES[model.cor_esquema ?? "azul"].primary}
+              onChange={(e) => persist({ cor_primaria: e.target.value || undefined })}
+              className="h-10 font-mono text-xs"
+            />
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground mb-1 block">2ª cor (destaque)</Label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={model.cor_secundaria || COLOR_SCHEMES[model.cor_esquema ?? "azul"].accent}
+              onChange={(e) => persist({ cor_secundaria: e.target.value })}
+              className="h-10 w-12 rounded-md border border-border cursor-pointer p-0.5 bg-transparent"
+            />
+            <Input
+              value={model.cor_secundaria || ""}
+              placeholder={COLOR_SCHEMES[model.cor_esquema ?? "azul"].accent}
+              onChange={(e) => persist({ cor_secundaria: e.target.value || undefined })}
+              className="h-10 font-mono text-xs"
+            />
+          </div>
+        </div>
+      </div>
+      {(model.cor_primaria || model.cor_secundaria) && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-xs h-7 mb-3"
+          onClick={() => persist({ cor_primaria: undefined, cor_secundaria: undefined })}
+        >
+          ↺ Voltar à paleta {COLOR_SCHEMES[model.cor_esquema ?? "azul"].label}
+        </Button>
+      )}
 
       {/* AI improvements + Save template */}
       <div className="grid grid-cols-2 gap-2 mt-6">

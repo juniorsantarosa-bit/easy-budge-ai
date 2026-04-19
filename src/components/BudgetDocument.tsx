@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { COLOR_SCHEMES, HEADER_FONTS, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont } from "@/lib/storage";
+import { HEADER_FONTS, resolveScheme, type BudgetModel, type ColorScheme, type LayoutTheme, type HeaderFont } from "@/lib/storage";
 
 function fmtBR(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -21,29 +21,65 @@ interface Props {
   scheme?: ColorScheme;
 }
 
-// Tamanho base dos valores no documento; o TOTAL será exatamente o dobro deste.
-const VALOR_PX = 16;       // demais valores
-const TOTAL_PX = VALOR_PX * 2; // 32px — o "valor total" é 2x
+const VALOR_PX = 16;
+const TOTAL_PX = VALOR_PX * 2; // 32px
+
+// Renderiza o "fundo" do cabeçalho: imagem com opacidade (marca d'água)
+// sobre uma cor sólida/gradiente. Se não houver imagem, mostra só a cor.
+function HeaderBackground({
+  color,
+  imageUrl,
+  opacity,
+}: {
+  color: string;
+  imageUrl?: string;
+  opacity?: number;
+}) {
+  return (
+    <>
+      <div className="absolute inset-0" style={{ background: color }} />
+      {imageUrl && (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${imageUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: opacity ?? 0.25,
+          }}
+        />
+      )}
+    </>
+  );
+}
 
 export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetDocument(
   { model, values, layout, scheme },
   ref,
 ) {
   const L: LayoutTheme = layout ?? model.layout ?? "moderno";
-  const S = COLOR_SCHEMES[scheme ?? model.cor_esquema ?? "azul"];
+  const S = resolveScheme({ ...model, cor_esquema: scheme ?? model.cor_esquema });
   const HF: HeaderFont = model.header_font ?? "sans";
   const headerFamily = HEADER_FONTS[HF].family;
   const today = new Date().toLocaleDateString("pt-BR");
-  const total = (model.itens_servico ?? []).reduce((s, it) => s + (it.quantidade ?? 1) * (it.valor_unitario ?? 0), 0);
+  const total = (model.itens_servico ?? []).reduce(
+    (s, it) => s + (it.quantidade ?? 1) * (it.valor_unitario ?? 0),
+    0,
+  );
   const camposSemValor = model.campos.filter((c) => c.tipo !== "valor");
   const camposValor = model.campos.filter((c) => c.tipo === "valor");
   const subtitulo = model.header_subtitulo ?? "Proposta Comercial";
+  const rodape = model.rodape ?? "";
+  const headerImg = model.header_image_url;
+  const headerOp = model.header_image_opacity ?? 0.25;
 
   // ---------- LAYOUT MODERNO (gradient hero) ----------
   if (L === "moderno") {
+    const headerColor = `linear-gradient(135deg, ${S.primaryDark} 0%, ${S.primary} 100%)`;
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
-        <div className="relative px-6 pt-6 pb-8 text-white" style={{ background: `linear-gradient(135deg, ${S.primaryDark} 0%, ${S.primary} 100%)` }}>
+        <div className="relative px-6 pt-6 pb-8 text-white overflow-hidden">
+          <HeaderBackground color={headerColor} imageUrl={headerImg} opacity={headerOp} />
           <div className="absolute top-0 right-0 h-full w-32 opacity-25" style={{ background: `radial-gradient(circle at top right, ${S.accent}, transparent 70%)` }} />
           <div className="relative flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -71,7 +107,6 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         </div>
 
         <div className="px-6 pt-6 pb-6">
-          {/* Dados do cliente */}
           <div className="grid grid-cols-2 gap-2 mb-5">
             {camposSemValor.map((f) => (
               <div key={f.chave} className={`rounded-lg border-l-[3px] bg-slate-50 px-3 py-2 ${f.tipo === "longo" ? "col-span-2" : ""}`} style={{ borderColor: S.accent }}>
@@ -81,7 +116,6 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             ))}
           </div>
 
-          {/* Imagens primeiro (visual antes do valor) */}
           {model.imagens && model.imagens.length > 0 && (
             <div className="mt-6">
               <SectionTitle accent={S.accent} primary={S.primaryDark}>Galeria do projeto</SectionTitle>
@@ -93,7 +127,6 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             </div>
           )}
 
-          {/* Condições / observações antes do valor */}
           {model.condicoes && (
             <div className="mt-6 rounded-xl p-4" style={{ background: S.soft, border: `1px solid ${S.primary}22` }}>
               <SectionTitle accent={S.accent} primary={S.primaryDark} small>Condições</SectionTitle>
@@ -107,7 +140,6 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             </div>
           )}
 
-          {/* Itens — tabela */}
           {model.itens_servico && model.itens_servico.length > 0 && (
             <div className="mt-6">
               <SectionTitle accent={S.accent} primary={S.primaryDark}>Itens & serviços</SectionTitle>
@@ -136,7 +168,6 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             </div>
           )}
 
-          {/* Valor extra (campos de valor além do total) */}
           {camposValor.length > 0 && (
             <div className="mt-4 grid grid-cols-2 gap-2">
               {camposValor.map((f) => (
@@ -148,7 +179,6 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             </div>
           )}
 
-          {/* VALOR TOTAL — sempre por último */}
           {((model.itens_servico && model.itens_servico.length > 0) || total > 0) && (
             <div className="mt-8 rounded-2xl p-5 text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${S.primaryDark}, ${S.primary})` }}>
               <div className="flex items-center justify-between">
@@ -163,10 +193,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             </div>
           )}
 
-          <div className="mt-8 pt-4 border-t border-dashed border-slate-200 text-center">
-            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em]">Obrigado pela preferência</p>
-            <p className="text-[11px] font-semibold mt-1" style={{ color: S.primaryDark, fontFamily: headerFamily }}>{model.empresa ?? model.titulo}</p>
-          </div>
+          <Footer rodape={rodape} fallback={`Obrigado pela preferência · ${model.empresa ?? model.titulo}`} primary={S.primaryDark} font={headerFamily} />
         </div>
       </div>
     );
@@ -176,38 +203,39 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
   if (L === "elegante") {
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed flex" style={{ minHeight: 500 }}>
-        {/* sidebar */}
-        <aside className="w-[34%] p-5 text-white flex flex-col" style={{ background: S.primaryDark }}>
-          {model.logo_url ? (
-            <div className="h-16 w-16 rounded-lg bg-white p-1.5 flex items-center justify-center mb-4">
-              <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
-            </div>
-          ) : (
-            <div className="h-16 w-16 rounded-lg bg-white/15 flex items-center justify-center text-2xl font-black mb-4">
-              {(model.empresa ?? model.titulo).charAt(0)}
-            </div>
-          )}
-          <p className="text-[9px] uppercase tracking-[0.25em] opacity-70 font-semibold">{subtitulo}</p>
-          <h1 className="text-xl font-extrabold leading-tight mt-1" style={{ fontFamily: headerFamily }}>{model.empresa ?? model.titulo}</h1>
-          <div className="h-px my-4" style={{ background: S.accent, opacity: 0.6 }} />
-          <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold mb-1">Emitido em</p>
-          <p className="text-sm font-semibold mb-5">{today}</p>
+        <aside className="relative w-[34%] p-5 text-white flex flex-col overflow-hidden">
+          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} />
+          <div className="relative flex-1 flex flex-col">
+            {model.logo_url ? (
+              <div className="h-16 w-16 rounded-lg bg-white p-1.5 flex items-center justify-center mb-4">
+                <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+              </div>
+            ) : (
+              <div className="h-16 w-16 rounded-lg bg-white/15 flex items-center justify-center text-2xl font-black mb-4">
+                {(model.empresa ?? model.titulo).charAt(0)}
+              </div>
+            )}
+            <p className="text-[9px] uppercase tracking-[0.25em] opacity-70 font-semibold">{subtitulo}</p>
+            <h1 className="text-xl font-extrabold leading-tight mt-1" style={{ fontFamily: headerFamily }}>{model.empresa ?? model.titulo}</h1>
+            <div className="h-px my-4" style={{ background: S.accent, opacity: 0.6 }} />
+            <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold mb-1">Emitido em</p>
+            <p className="text-sm font-semibold mb-5">{today}</p>
 
-          {camposSemValor.slice(0, 4).map((f) => (
-            <div key={f.chave} className="mb-3">
-              <p className="text-[9px] uppercase tracking-wider opacity-70 font-bold">{f.rotulo}</p>
-              <p className="text-[12px] font-semibold mt-0.5 break-words">{fmtVal(f, values[f.chave])}</p>
-            </div>
-          ))}
+            {camposSemValor.slice(0, 4).map((f) => (
+              <div key={f.chave} className="mb-3">
+                <p className="text-[9px] uppercase tracking-wider opacity-70 font-bold">{f.rotulo}</p>
+                <p className="text-[12px] font-semibold mt-0.5 break-words">{fmtVal(f, values[f.chave])}</p>
+              </div>
+            ))}
 
-          <div className="mt-auto pt-4">
-            <div className="h-px mb-3" style={{ background: S.accent, opacity: 0.6 }} />
-            <p className="text-[9px] uppercase tracking-wider opacity-70">Obrigado</p>
-            <p className="text-[11px] font-semibold">{model.empresa}</p>
+            <div className="mt-auto pt-4">
+              <div className="h-px mb-3" style={{ background: S.accent, opacity: 0.6 }} />
+              <p className="text-[9px] uppercase tracking-wider opacity-70">Obrigado</p>
+              <p className="text-[11px] font-semibold">{model.empresa}</p>
+            </div>
           </div>
         </aside>
 
-        {/* main */}
         <div className="flex-1 px-6 py-6">
           <div className="border-l-4 pl-3 mb-5" style={{ borderColor: S.accent }}>
             <p className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: S.primaryDark }}>Detalhes</p>
@@ -270,13 +298,274 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             </div>
           )}
 
-          {/* VALOR TOTAL — por último */}
           {((model.itens_servico && model.itens_servico.length > 0) || total > 0) && (
             <div className="mt-6 rounded-lg p-4 flex items-center justify-between" style={{ background: S.soft, border: `2px solid ${S.primaryDark}` }}>
               <p className="text-[11px] uppercase tracking-[0.2em] font-bold" style={{ color: S.primaryDark }}>Total da proposta</p>
               <p className="font-black leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
             </div>
           )}
+
+          <Footer rodape={rodape} fallback="" primary={S.primaryDark} font={headerFamily} />
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- LAYOUT MAGAZINE (revista — capa de impacto) ----------
+  if (L === "magazine") {
+    return (
+      <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
+        {/* Capa estilo revista */}
+        <div className="relative h-56 overflow-hidden">
+          <HeaderBackground
+            color={`linear-gradient(160deg, ${S.primaryDark} 0%, ${S.primary} 60%, ${S.accent} 100%)`}
+            imageUrl={headerImg}
+            opacity={headerOp}
+          />
+          {/* faixa diagonal */}
+          <div
+            className="absolute -bottom-10 left-0 right-0 h-24"
+            style={{ background: "white", transform: "skewY(-3deg)" }}
+          />
+          <div className="relative h-full flex flex-col justify-between p-6 text-white">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-90">{subtitulo}</p>
+              <p className="text-[11px] opacity-90">{today}</p>
+            </div>
+            <div>
+              <h1 className="text-4xl font-black leading-[0.95] tracking-tight" style={{ fontFamily: headerFamily }}>
+                {model.empresa ?? model.titulo}
+              </h1>
+              <p className="text-[12px] mt-1 opacity-90 font-semibold">{model.titulo}</p>
+            </div>
+          </div>
+          {/* logo no canto, sobreposto à faixa branca */}
+          {model.logo_url && (
+            <div className="absolute bottom-2 right-6 h-16 w-16 rounded-full bg-white p-2 shadow-lg flex items-center justify-center z-10">
+              <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 pt-4 pb-6">
+          {/* tag de seção */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="h-[2px] w-8" style={{ background: S.accent }} />
+            <p className="text-[10px] uppercase tracking-[0.3em] font-black" style={{ color: S.accent }}>Edição especial</p>
+          </div>
+
+          {/* Resumo em duas colunas tipo revista */}
+          <div className="grid grid-cols-2 gap-4 mb-5">
+            <div>
+              {camposSemValor.slice(0, Math.ceil(camposSemValor.length / 2)).map((f) => (
+                <div key={f.chave} className="mb-2">
+                  <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: S.primary }}>{f.rotulo}</p>
+                  <p className="text-[13px] font-semibold text-slate-800">{fmtVal(f, values[f.chave])}</p>
+                </div>
+              ))}
+            </div>
+            <div>
+              {camposSemValor.slice(Math.ceil(camposSemValor.length / 2)).map((f) => (
+                <div key={f.chave} className="mb-2">
+                  <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: S.primary }}>{f.rotulo}</p>
+                  <p className="text-[13px] font-semibold text-slate-800">{fmtVal(f, values[f.chave])}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {model.imagens && model.imagens.length > 0 && (
+            <div className="mb-5">
+              <div className="grid grid-cols-3 gap-2">
+                {model.imagens.map((img, i) => (
+                  <img
+                    key={img.id}
+                    src={img.url}
+                    alt=""
+                    className={`rounded-lg w-full object-cover ${i === 0 ? "col-span-2 h-40" : "h-24"}`}
+                    crossOrigin="anonymous"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bloco "destaque" estilo magazine */}
+          {model.condicoes && (
+            <div className="mb-4 pl-4 border-l-4" style={{ borderColor: S.accent }}>
+              <p className="text-[10px] uppercase tracking-wider font-black mb-1" style={{ color: S.primaryDark }}>Condições</p>
+              <p className="text-[13px] text-slate-700 italic whitespace-pre-line">{model.condicoes}</p>
+            </div>
+          )}
+          {model.observacoes && (
+            <div className="mb-4 pl-4 border-l-4" style={{ borderColor: S.primary }}>
+              <p className="text-[10px] uppercase tracking-wider font-black mb-1" style={{ color: S.primaryDark }}>Observações</p>
+              <p className="text-[13px] text-slate-700 whitespace-pre-line">{model.observacoes}</p>
+            </div>
+          )}
+
+          {model.itens_servico && model.itens_servico.length > 0 && (
+            <div className="mb-4 rounded-xl overflow-hidden" style={{ border: `1px solid ${S.primary}33` }}>
+              <div className="px-3 py-2 text-white text-[10px] uppercase tracking-[0.25em] font-black" style={{ background: S.primaryDark }}>
+                O que está incluído
+              </div>
+              <table className="w-full text-[12px]">
+                <tbody>
+                  {model.itens_servico.map((it, i) => (
+                    <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      <td className="py-2 px-3">
+                        <span className="font-semibold">{it.descricao}</span>
+                        <span className="text-slate-400 text-[11px]"> · ×{it.quantidade ?? 1}</span>
+                      </td>
+                      <td className="text-right py-2 px-3 font-semibold" style={{ color: S.primaryDark }}>
+                        {fmtBR((it.quantidade ?? 1) * (it.valor_unitario ?? 0))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* TOTAL — capa final */}
+          {((model.itens_servico && model.itens_servico.length > 0) || total > 0) && (
+            <div
+              className="relative mt-6 rounded-2xl overflow-hidden p-5 text-white"
+              style={{ background: `linear-gradient(120deg, ${S.primaryDark}, ${S.accent})` }}
+            >
+              <p className="text-[10px] uppercase tracking-[0.3em] font-black opacity-90">Investimento</p>
+              <p className="font-black leading-none mt-1" style={{ fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+            </div>
+          )}
+
+          <Footer rodape={rodape} fallback={model.empresa ?? model.titulo} primary={S.primaryDark} font={headerFamily} />
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- LAYOUT CORPORATIVO (executivo, sério, com 2 cores em barras) ----------
+  if (L === "corporativo") {
+    return (
+      <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
+        {/* Cabeçalho duplo: barra superior fina + bloco principal */}
+        <div className="h-2" style={{ background: S.accent }} />
+        <div className="relative px-6 py-5 overflow-hidden">
+          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} />
+          <div className="relative flex items-center justify-between text-white">
+            <div className="flex items-center gap-4">
+              {model.logo_url ? (
+                <div className="h-14 w-14 bg-white p-1.5 rounded shadow flex items-center justify-center">
+                  <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+                </div>
+              ) : (
+                <div className="h-14 w-14 bg-white/15 rounded flex items-center justify-center text-xl font-black">
+                  {(model.empresa ?? model.titulo).charAt(0)}
+                </div>
+              )}
+              <div>
+                <h1 className="text-xl font-black leading-tight" style={{ fontFamily: headerFamily }}>
+                  {model.empresa ?? model.titulo}
+                </h1>
+                <p className="text-[10px] uppercase tracking-[0.25em] opacity-80 mt-0.5">{subtitulo}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] uppercase tracking-wider opacity-70 font-bold">Emitido em</p>
+              <p className="text-sm font-semibold">{today}</p>
+            </div>
+          </div>
+        </div>
+        <div className="h-1" style={{ background: S.primary }} />
+
+        <div className="px-6 py-6">
+          {/* Bloco "Para" estilo carta executiva */}
+          <div className="grid grid-cols-12 gap-4 mb-5">
+            <div className="col-span-4">
+              <p className="text-[9px] uppercase tracking-[0.2em] font-bold" style={{ color: S.accent }}>Para</p>
+            </div>
+            <div className="col-span-8 space-y-2">
+              {camposSemValor.map((f) => (
+                <div key={f.chave} className="flex justify-between gap-3 border-b border-dotted border-slate-200 pb-1">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">{f.rotulo}</p>
+                  <p className="text-[12px] font-semibold text-slate-800 text-right">{fmtVal(f, values[f.chave])}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {model.imagens && model.imagens.length > 0 && (
+            <div className="grid grid-cols-12 gap-4 mb-5">
+              <div className="col-span-4">
+                <p className="text-[9px] uppercase tracking-[0.2em] font-bold" style={{ color: S.accent }}>Anexos</p>
+              </div>
+              <div className="col-span-8 grid grid-cols-2 gap-2">
+                {model.imagens.map((img) => (
+                  <img key={img.id} src={img.url} alt="" className="rounded w-full h-24 object-cover border border-slate-200" crossOrigin="anonymous" />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {model.condicoes && (
+            <div className="grid grid-cols-12 gap-4 mb-4">
+              <div className="col-span-4">
+                <p className="text-[9px] uppercase tracking-[0.2em] font-bold" style={{ color: S.accent }}>Condições</p>
+              </div>
+              <div className="col-span-8">
+                <p className="text-[12px] text-slate-700 whitespace-pre-line">{model.condicoes}</p>
+              </div>
+            </div>
+          )}
+          {model.observacoes && (
+            <div className="grid grid-cols-12 gap-4 mb-4">
+              <div className="col-span-4">
+                <p className="text-[9px] uppercase tracking-[0.2em] font-bold" style={{ color: S.accent }}>Observações</p>
+              </div>
+              <div className="col-span-8">
+                <p className="text-[12px] text-slate-700 whitespace-pre-line">{model.observacoes}</p>
+              </div>
+            </div>
+          )}
+
+          {model.itens_servico && model.itens_servico.length > 0 && (
+            <div className="mt-2">
+              <div className="h-[2px] mb-2" style={{ background: S.primaryDark }} />
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr>
+                    <th className="text-left py-2 font-black text-[10px] uppercase tracking-wider" style={{ color: S.primaryDark }}>Item</th>
+                    <th className="text-center py-2 font-black text-[10px] uppercase tracking-wider w-12" style={{ color: S.primaryDark }}>Qtd</th>
+                    <th className="text-right py-2 font-black text-[10px] uppercase tracking-wider w-24" style={{ color: S.primaryDark }}>Unit.</th>
+                    <th className="text-right py-2 font-black text-[10px] uppercase tracking-wider w-24" style={{ color: S.primaryDark }}>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {model.itens_servico.map((it, i) => (
+                    <tr key={i} className="border-b border-slate-100">
+                      <td className="py-2">{it.descricao}</td>
+                      <td className="text-center py-2">{it.quantidade ?? 1}</td>
+                      <td className="text-right py-2 text-slate-600">{fmtBR(it.valor_unitario ?? 0)}</td>
+                      <td className="text-right py-2 font-semibold">{fmtBR((it.quantidade ?? 1) * (it.valor_unitario ?? 0))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* TOTAL em barra dupla */}
+          {((model.itens_servico && model.itens_servico.length > 0) || total > 0) && (
+            <div className="mt-6 rounded overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 text-white" style={{ background: S.primaryDark }}>
+                <p className="text-[11px] uppercase tracking-[0.25em] font-black">Valor total da proposta</p>
+                <p className="font-black leading-none" style={{ fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+              </div>
+              <div className="h-1" style={{ background: S.accent }} />
+            </div>
+          )}
+
+          <Footer rodape={rodape} fallback={`${model.empresa ?? model.titulo} · ${today}`} primary={S.primaryDark} font={headerFamily} />
         </div>
       </div>
     );
@@ -284,90 +573,92 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
 
   // ---------- LAYOUT MINIMAL (limpo, tipográfico) ----------
   return (
-    <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed px-7 py-7" style={{ minHeight: 500 }}>
-      <div className="flex items-center justify-between pb-4 border-b-2" style={{ borderColor: S.primaryDark }}>
-        <div className="flex items-center gap-3">
-          {model.logo_url ? (
-            <img src={model.logo_url} alt="logo" className="h-12 w-12 object-contain" crossOrigin="anonymous" />
-          ) : (
-            <div className="h-12 w-12 rounded flex items-center justify-center text-xl font-black text-white" style={{ background: S.primaryDark }}>
-              {(model.empresa ?? model.titulo).charAt(0)}
+    <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
+      <div className="relative px-7 py-7 overflow-hidden">
+        {headerImg && <HeaderBackground color="white" imageUrl={headerImg} opacity={headerOp} />}
+        <div className="relative flex items-center justify-between pb-4 border-b-2" style={{ borderColor: S.primaryDark }}>
+          <div className="flex items-center gap-3">
+            {model.logo_url ? (
+              <img src={model.logo_url} alt="logo" className="h-12 w-12 object-contain" crossOrigin="anonymous" />
+            ) : (
+              <div className="h-12 w-12 rounded flex items-center justify-center text-xl font-black text-white" style={{ background: S.primaryDark }}>
+                {(model.empresa ?? model.titulo).charAt(0)}
+              </div>
+            )}
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold">{subtitulo}</p>
+              <h1 className="text-xl font-black tracking-tight" style={{ fontFamily: headerFamily }}>{model.empresa ?? model.titulo}</h1>
             </div>
-          )}
-          <div>
-            <p className="text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold">{subtitulo}</p>
-            <h1 className="text-xl font-black tracking-tight" style={{ fontFamily: headerFamily }}>{model.empresa ?? model.titulo}</h1>
           </div>
-        </div>
-        <div className="text-right">
-          <p className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Data</p>
-          <p className="text-sm font-semibold">{today}</p>
+          <div className="text-right">
+            <p className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Data</p>
+            <p className="text-sm font-semibold">{today}</p>
+          </div>
         </div>
       </div>
 
-      <h2 className="mt-6 text-2xl font-black tracking-tight" style={{ color: S.primaryDark, fontFamily: headerFamily }}>{model.titulo}</h2>
-      {model.descricao && <p className="text-[13px] text-slate-600 mt-1">{model.descricao}</p>}
+      <div className="px-7 pb-7">
+        <h2 className="text-2xl font-black tracking-tight" style={{ color: S.primaryDark, fontFamily: headerFamily }}>{model.titulo}</h2>
+        {model.descricao && <p className="text-[13px] text-slate-600 mt-1">{model.descricao}</p>}
 
-      <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3">
-        {camposSemValor.map((f) => (
-          <div key={f.chave} className={f.tipo === "longo" ? "col-span-2" : ""}>
-            <p className="text-[9px] uppercase tracking-[0.18em] text-slate-400 font-bold">{f.rotulo}</p>
-            <p className="text-[13px] font-semibold text-slate-800 mt-0.5 border-b border-slate-100 pb-1">{fmtVal(f, values[f.chave])}</p>
-          </div>
-        ))}
-      </div>
-
-      {model.imagens && model.imagens.length > 0 && (
-        <div className="mt-6 grid grid-cols-3 gap-2">
-          {model.imagens.map((img) => (
-            <img key={img.id} src={img.url} alt="" className="rounded w-full h-24 object-cover" crossOrigin="anonymous" />
+        <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3">
+          {camposSemValor.map((f) => (
+            <div key={f.chave} className={f.tipo === "longo" ? "col-span-2" : ""}>
+              <p className="text-[9px] uppercase tracking-[0.18em] text-slate-400 font-bold">{f.rotulo}</p>
+              <p className="text-[13px] font-semibold text-slate-800 mt-0.5 border-b border-slate-100 pb-1">{fmtVal(f, values[f.chave])}</p>
+            </div>
           ))}
         </div>
-      )}
 
-      {model.condicoes && (
-        <div className="mt-6">
-          <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-1" style={{ color: S.primaryDark }}>Condições</p>
-          <p className="text-[12px] text-slate-700 whitespace-pre-line">{model.condicoes}</p>
-        </div>
-      )}
-      {model.observacoes && (
-        <div className="mt-4">
-          <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-1" style={{ color: S.primaryDark }}>Observações</p>
-          <p className="text-[12px] text-slate-700 whitespace-pre-line">{model.observacoes}</p>
-        </div>
-      )}
-
-      {model.itens_servico && model.itens_servico.length > 0 && (
-        <div className="mt-6">
-          <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-2" style={{ color: S.primaryDark }}>Itens</p>
-          <table className="w-full text-[12px]">
-            <tbody>
-              {model.itens_servico.map((it, i) => (
-                <tr key={i} className="border-b border-slate-100">
-                  <td className="py-2">{it.descricao} <span className="text-slate-400 text-[11px]">×{it.quantidade ?? 1}</span></td>
-                  <td className="text-right py-2 font-semibold">{fmtBR((it.quantidade ?? 1) * (it.valor_unitario ?? 0))}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* VALOR TOTAL — por último */}
-      {((model.itens_servico && model.itens_servico.length > 0) || total > 0) && (
-        <div className="mt-8 pt-4 border-t-2 flex items-end justify-between" style={{ borderColor: S.primaryDark }}>
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500 font-bold">Total</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Investimento desta proposta</p>
+        {model.imagens && model.imagens.length > 0 && (
+          <div className="mt-6 grid grid-cols-3 gap-2">
+            {model.imagens.map((img) => (
+              <img key={img.id} src={img.url} alt="" className="rounded w-full h-24 object-cover" crossOrigin="anonymous" />
+            ))}
           </div>
-          <p className="font-black tracking-tight leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
-        </div>
-      )}
+        )}
 
-      <p className="mt-8 text-center text-[10px] uppercase tracking-[0.3em] text-slate-400">
-        {model.empresa ?? model.titulo} · obrigado
-      </p>
+        {model.condicoes && (
+          <div className="mt-6">
+            <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-1" style={{ color: S.primaryDark }}>Condições</p>
+            <p className="text-[12px] text-slate-700 whitespace-pre-line">{model.condicoes}</p>
+          </div>
+        )}
+        {model.observacoes && (
+          <div className="mt-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-1" style={{ color: S.primaryDark }}>Observações</p>
+            <p className="text-[12px] text-slate-700 whitespace-pre-line">{model.observacoes}</p>
+          </div>
+        )}
+
+        {model.itens_servico && model.itens_servico.length > 0 && (
+          <div className="mt-6">
+            <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-2" style={{ color: S.primaryDark }}>Itens</p>
+            <table className="w-full text-[12px]">
+              <tbody>
+                {model.itens_servico.map((it, i) => (
+                  <tr key={i} className="border-b border-slate-100">
+                    <td className="py-2">{it.descricao} <span className="text-slate-400 text-[11px]">×{it.quantidade ?? 1}</span></td>
+                    <td className="text-right py-2 font-semibold">{fmtBR((it.quantidade ?? 1) * (it.valor_unitario ?? 0))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {((model.itens_servico && model.itens_servico.length > 0) || total > 0) && (
+          <div className="mt-8 pt-4 border-t-2 flex items-end justify-between" style={{ borderColor: S.primaryDark }}>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500 font-bold">Total</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Investimento desta proposta</p>
+            </div>
+            <p className="font-black tracking-tight leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+          </div>
+        )}
+
+        <Footer rodape={rodape} fallback={`${model.empresa ?? model.titulo} · obrigado`} primary={S.primaryDark} font={headerFamily} />
+      </div>
     </div>
   );
 });
@@ -379,6 +670,18 @@ function SectionTitle({ children, accent, primary, small }: { children: React.Re
       <h3 className={`uppercase tracking-wider font-extrabold ${small ? "text-[10px]" : "text-xs"}`} style={{ color: primary }}>
         {children}
       </h3>
+    </div>
+  );
+}
+
+function Footer({ rodape, fallback, primary, font }: { rodape: string; fallback: string; primary: string; font: string }) {
+  const text = rodape?.trim() ? rodape : fallback;
+  if (!text) return null;
+  return (
+    <div className="mt-8 pt-4 border-t border-dashed border-slate-200 text-center">
+      <p className="text-[11px] whitespace-pre-line font-medium" style={{ color: primary, fontFamily: font }}>
+        {text}
+      </p>
     </div>
   );
 }
