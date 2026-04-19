@@ -1,6 +1,18 @@
 // LocalStorage management for budget models (no auth in MVP)
 export type FieldType = "texto" | "data" | "valor" | "numero" | "longo";
 
+export type LayoutTheme = "moderno" | "elegante" | "minimal";
+export type ColorScheme = "azul" | "verde" | "roxo" | "vermelho" | "preto" | "rosa";
+
+export const COLOR_SCHEMES: Record<ColorScheme, { primary: string; primaryDark: string; accent: string; accentDark: string; soft: string; softAccent: string; label: string }> = {
+  azul:     { label: "Azul",     primary: "#2563eb", primaryDark: "#1d4ed8", accent: "#fb923c", accentDark: "#ea580c", soft: "#eff6ff", softAccent: "#fff7ed" },
+  verde:    { label: "Verde",    primary: "#059669", primaryDark: "#047857", accent: "#f59e0b", accentDark: "#d97706", soft: "#ecfdf5", softAccent: "#fffbeb" },
+  roxo:     { label: "Roxo",     primary: "#7c3aed", primaryDark: "#6d28d9", accent: "#ec4899", accentDark: "#db2777", soft: "#f5f3ff", softAccent: "#fdf2f8" },
+  vermelho: { label: "Vermelho", primary: "#dc2626", primaryDark: "#b91c1c", accent: "#f59e0b", accentDark: "#d97706", soft: "#fef2f2", softAccent: "#fffbeb" },
+  preto:    { label: "Preto",    primary: "#1f2937", primaryDark: "#111827", accent: "#facc15", accentDark: "#ca8a04", soft: "#f3f4f6", softAccent: "#fefce8" },
+  rosa:     { label: "Rosa",     primary: "#db2777", primaryDark: "#be185d", accent: "#8b5cf6", accentDark: "#7c3aed", soft: "#fdf2f8", softAccent: "#f5f3ff" },
+};
+
 export interface BudgetField {
   chave: string;
   rotulo: string;
@@ -34,6 +46,8 @@ export interface BudgetModel {
   logo_url?: string;
   imagens?: BudgetImage[];
   cor_destaque?: string;
+  cor_esquema?: ColorScheme;
+  layout?: LayoutTheme;
   criado_em: number;
   atualizado_em: number;
 }
