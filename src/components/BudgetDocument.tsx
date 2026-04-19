@@ -187,8 +187,8 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
               {(model.empresa ?? model.titulo).charAt(0)}
             </div>
           )}
-          <p className="text-[9px] uppercase tracking-[0.25em] opacity-70 font-semibold">Proposta</p>
-          <h1 className="text-xl font-extrabold leading-tight mt-1">{model.empresa ?? model.titulo}</h1>
+          <p className="text-[9px] uppercase tracking-[0.25em] opacity-70 font-semibold">{subtitulo}</p>
+          <h1 className="text-xl font-extrabold leading-tight mt-1" style={{ fontFamily: headerFamily }}>{model.empresa ?? model.titulo}</h1>
           <div className="h-px my-4" style={{ background: S.accent, opacity: 0.6 }} />
           <p className="text-[10px] uppercase tracking-wider opacity-70 font-bold mb-1">Emitido em</p>
           <p className="text-sm font-semibold mb-5">{today}</p>
@@ -274,7 +274,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           {((model.itens_servico && model.itens_servico.length > 0) || total > 0) && (
             <div className="mt-6 rounded-lg p-4 flex items-center justify-between" style={{ background: S.soft, border: `2px solid ${S.primaryDark}` }}>
               <p className="text-[11px] uppercase tracking-[0.2em] font-bold" style={{ color: S.primaryDark }}>Total da proposta</p>
-              <p className="text-2xl font-black" style={{ color: S.primaryDark }}>{fmtBR(total)}</p>
+              <p className="font-black leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
             </div>
           )}
         </div>
@@ -295,8 +295,8 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             </div>
           )}
           <div>
-            <p className="text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold">Proposta</p>
-            <h1 className="text-xl font-black tracking-tight">{model.empresa ?? model.titulo}</h1>
+            <p className="text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold">{subtitulo}</p>
+            <h1 className="text-xl font-black tracking-tight" style={{ fontFamily: headerFamily }}>{model.empresa ?? model.titulo}</h1>
           </div>
         </div>
         <div className="text-right">
@@ -305,7 +305,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         </div>
       </div>
 
-      <h2 className="mt-6 text-2xl font-black tracking-tight" style={{ color: S.primaryDark }}>{model.titulo}</h2>
+      <h2 className="mt-6 text-2xl font-black tracking-tight" style={{ color: S.primaryDark, fontFamily: headerFamily }}>{model.titulo}</h2>
       {model.descricao && <p className="text-[13px] text-slate-600 mt-1">{model.descricao}</p>}
 
       <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3">
@@ -361,7 +361,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500 font-bold">Total</p>
             <p className="text-[11px] text-slate-500 mt-0.5">Investimento desta proposta</p>
           </div>
-          <p className="text-3xl font-black tracking-tight" style={{ color: S.primaryDark }}>{fmtBR(total)}</p>
+          <p className="font-black tracking-tight leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
         </div>
       )}
 
