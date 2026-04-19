@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as NovoUploadRouteImport } from './routes/novo.upload'
+import { Route as NovoIaRouteImport } from './routes/novo.ia'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovoUploadRoute = NovoUploadRouteImport.update({
+  id: '/novo/upload',
+  path: '/novo/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovoIaRoute = NovoIaRouteImport.update({
+  id: '/novo/ia',
+  path: '/novo/ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/novo/ia': typeof NovoIaRoute
+  '/novo/upload': typeof NovoUploadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/novo/ia': typeof NovoIaRoute
+  '/novo/upload': typeof NovoUploadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/novo/ia': typeof NovoIaRoute
+  '/novo/upload': typeof NovoUploadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/novo/ia' | '/novo/upload'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/novo/ia' | '/novo/upload'
+  id: '__root__' | '/' | '/novo/ia' | '/novo/upload'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  NovoIaRoute: typeof NovoIaRoute
+  NovoUploadRoute: typeof NovoUploadRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,12 +68,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/novo/upload': {
+      id: '/novo/upload'
+      path: '/novo/upload'
+      fullPath: '/novo/upload'
+      preLoaderRoute: typeof NovoUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/novo/ia': {
+      id: '/novo/ia'
+      path: '/novo/ia'
+      fullPath: '/novo/ia'
+      preLoaderRoute: typeof NovoIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  NovoIaRoute: NovoIaRoute,
+  NovoUploadRoute: NovoUploadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
