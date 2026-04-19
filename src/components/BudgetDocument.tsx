@@ -57,8 +57,8 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
                 </div>
               )}
               <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] font-semibold opacity-80">Proposta Comercial</p>
-                <h1 className="text-2xl font-extrabold leading-tight mt-0.5">{model.empresa ?? model.titulo}</h1>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-semibold opacity-80">{subtitulo}</p>
+                <h1 className="text-2xl font-extrabold leading-tight mt-0.5" style={{ fontFamily: headerFamily }}>{model.empresa ?? model.titulo}</h1>
               </div>
             </div>
             <div className="text-right">
@@ -142,7 +142,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
               {camposValor.map((f) => (
                 <div key={f.chave} className="rounded-lg border-l-[3px] bg-slate-50 px-3 py-2" style={{ borderColor: S.primary }}>
                   <p className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">{f.rotulo}</p>
-                  <p className="text-sm font-bold mt-0.5" style={{ color: S.primaryDark }}>{fmtVal(f, values[f.chave])}</p>
+                  <p className="font-bold mt-0.5" style={{ color: S.primaryDark, fontSize: VALOR_PX }}>{fmtVal(f, values[f.chave])}</p>
                 </div>
               ))}
             </div>
@@ -154,7 +154,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-80">Investimento total</p>
-                  <p className="text-3xl font-black mt-1">{fmtBR(total)}</p>
+                  <p className="font-black mt-1 leading-none" style={{ fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
                 </div>
                 <span className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ background: S.accent, color: S.accentDark }}>
                   À vista
@@ -165,7 +165,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
 
           <div className="mt-8 pt-4 border-t border-dashed border-slate-200 text-center">
             <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em]">Obrigado pela preferência</p>
-            <p className="text-[11px] font-semibold mt-1" style={{ color: S.primaryDark }}>{model.empresa ?? model.titulo}</p>
+            <p className="text-[11px] font-semibold mt-1" style={{ color: S.primaryDark, fontFamily: headerFamily }}>{model.empresa ?? model.titulo}</p>
           </div>
         </div>
       </div>
