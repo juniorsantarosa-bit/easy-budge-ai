@@ -123,13 +123,13 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed" style={{ minHeight: 500 }}>
         <div className="relative px-6 pt-6 pb-8 text-white overflow-hidden">
-          <HeaderBackground color={headerColor} imageUrl={headerImg} opacity={headerOp} />
+          <HeaderBackground color={headerColor} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="absolute top-0 right-0 h-full w-32 opacity-25" style={{ background: `radial-gradient(circle at top right, ${S.accent}, transparent 70%)` }} />
           <div className="relative flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               {model.logo_url ? (
                 <div className="h-16 w-16 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center">
-                  <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+                  <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
                 </div>
               ) : (
                 <div className="h-16 w-16 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center text-2xl font-black">
@@ -248,11 +248,11 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
     return (
       <div ref={ref} className="bg-white text-slate-900 text-[13px] leading-relaxed flex" style={{ minHeight: 500 }}>
         <aside className="relative w-[34%] p-5 text-white flex flex-col overflow-hidden">
-          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} />
+          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="relative flex-1 flex flex-col">
             {model.logo_url ? (
               <div className="h-16 w-16 rounded-lg bg-white p-1.5 flex items-center justify-center mb-4">
-                <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+                <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
               </div>
             ) : (
               <div className="h-16 w-16 rounded-lg bg-white/15 flex items-center justify-center text-2xl font-black mb-4">
@@ -386,7 +386,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           {/* logo no canto, sobreposto à faixa branca */}
           {model.logo_url && (
             <div className="absolute bottom-2 right-6 h-16 w-16 rounded-full bg-white p-2 shadow-lg flex items-center justify-center z-10">
-              <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+              <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
             </div>
           )}
         </div>
@@ -495,12 +495,12 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         {/* Cabeçalho duplo: barra superior fina + bloco principal */}
         <div className="h-2" style={{ background: S.accent }} />
         <div className="relative px-6 py-5 overflow-hidden">
-          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} />
+          <HeaderBackground color={S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="relative flex items-center justify-between text-white">
             <div className="flex items-center gap-4">
               {model.logo_url ? (
                 <div className="h-14 w-14 bg-white p-1.5 rounded shadow flex items-center justify-center">
-                  <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" crossOrigin="anonymous" />
+                  <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
                 </div>
               ) : (
                 <div className="h-14 w-14 bg-white/15 rounded flex items-center justify-center text-xl font-black">
@@ -623,7 +623,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         <div className="relative flex items-center justify-between pb-4 border-b-2" style={{ borderColor: S.primaryDark }}>
           <div className="flex items-center gap-3">
             {model.logo_url ? (
-              <img src={model.logo_url} alt="logo" className="h-12 w-12 object-contain" crossOrigin="anonymous" />
+              <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-12 w-12" />
             ) : (
               <div className="h-12 w-12 rounded flex items-center justify-center text-xl font-black text-white" style={{ background: S.primaryDark }}>
                 {(model.empresa ?? model.titulo).charAt(0)}
