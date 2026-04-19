@@ -150,11 +150,11 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           <div className="relative flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               {model.logo_url ? (
-                <div className="h-16 w-16 rounded-xl bg-white shadow-md overflow-hidden">
+                <div className="h-16 w-16 rounded-md bg-white shadow-md overflow-hidden">
                   <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
                 </div>
               ) : (
-                <div className="h-16 w-16 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center text-2xl font-black">
+                <div className="h-16 w-16 rounded-md bg-white/15 backdrop-blur flex items-center justify-center text-2xl font-black">
                   {(model.empresa ?? model.titulo).charAt(0)}
                 </div>
               )}
@@ -273,11 +273,11 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           <HeaderBackground color={headerBgHex ?? S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="relative flex-1 flex flex-col">
             {model.logo_url ? (
-              <div className="h-16 w-16 rounded-lg bg-white overflow-hidden mb-4">
+              <div className="h-16 w-16 rounded-md bg-white overflow-hidden mb-4">
                 <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
               </div>
             ) : (
-              <div className="h-16 w-16 rounded-lg bg-white/15 flex items-center justify-center text-2xl font-black mb-4">
+              <div className="h-16 w-16 rounded-md bg-white/15 flex items-center justify-center text-2xl font-black mb-4">
                 {(model.empresa ?? model.titulo).charAt(0)}
               </div>
             )}
@@ -411,7 +411,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           </div>
           {/* logo no canto, sobreposto à faixa branca */}
           {model.logo_url && (
-            <div className="absolute bottom-2 right-6 h-16 w-16 rounded-full bg-white shadow-lg overflow-hidden z-10">
+            <div className="absolute bottom-2 right-6 h-16 w-16 rounded-md bg-white shadow-lg overflow-hidden z-10">
               <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
             </div>
           )}
@@ -525,11 +525,11 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           <div className="relative flex items-center justify-between" style={{ color: headerTextColor }}>
             <div className="flex items-center gap-4">
               {model.logo_url ? (
-                <div className="h-14 w-14 bg-white rounded shadow overflow-hidden">
+                <div className="h-14 w-14 bg-white rounded-md shadow overflow-hidden">
                   <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
                 </div>
               ) : (
-                <div className="h-14 w-14 bg-white/15 rounded flex items-center justify-center text-xl font-black">
+                <div className="h-14 w-14 bg-white/15 rounded-md flex items-center justify-center text-xl font-black">
                   {(model.empresa ?? model.titulo).charAt(0)}
                 </div>
               )}
@@ -649,9 +649,11 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         <div className="relative flex items-center justify-between pb-4 border-b-2" style={{ borderColor: S.primaryDark }}>
           <div className="flex items-center gap-3">
             {model.logo_url ? (
-              <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-12 w-12" />
+              <div className="h-12 w-12 rounded-md overflow-hidden bg-white">
+                <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
+              </div>
             ) : (
-              <div className="h-12 w-12 rounded flex items-center justify-center text-xl font-black text-white" style={{ background: S.primaryDark }}>
+              <div className="h-12 w-12 rounded-md flex items-center justify-center text-xl font-black text-white" style={{ background: S.primaryDark }}>
                 {(model.empresa ?? model.titulo).charAt(0)}
               </div>
             )}
