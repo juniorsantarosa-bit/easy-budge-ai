@@ -381,7 +381,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         {/* Capa estilo revista */}
         <div className="relative h-56 overflow-hidden">
           <HeaderBackground
-            color={`linear-gradient(160deg, ${S.primaryDark} 0%, ${S.primary} 60%, ${S.accent} 100%)`}
+            color={headerBgHex ?? `linear-gradient(160deg, ${S.primaryDark} 0%, ${S.primary} 60%, ${S.accent} 100%)`}
             imageUrl={headerImg}
             opacity={headerOp}
             zoom={headerZoom}
