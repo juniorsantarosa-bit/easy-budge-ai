@@ -33,7 +33,8 @@ interface Props {
 }
 
 const VALOR_PX = 16;
-const TOTAL_PX = VALOR_PX * 2; // 32px
+// Total da proposta: 50% do tamanho anterior (antes era 2x dos demais valores)
+const TOTAL_PX = VALOR_PX; // 16px — mesmo tamanho dos demais valores
 
 // Renderiza o "fundo" do cabeçalho: imagem (com zoom/posição) + opacidade
 // (marca d'água) + uma camada de cor opcional sobre a imagem.
@@ -83,7 +84,9 @@ function HeaderBackground({
   );
 }
 
-// Logo com enquadramento (zoom + posição) — usado em todos os layouts
+// Logo com enquadramento (zoom + posição) — usado em todos os layouts.
+// object-cover + scale base ≥ 1 garantem que o logo ocupe 100% da caixa
+// (sem bordas brancas em volta), permitindo ainda o ajuste fino do usuário.
 function FramedLogo({ url, zoom, x, y, className, style }: { url: string; zoom?: number; x?: number; y?: number; className?: string; style?: React.CSSProperties }) {
   const z = zoom ?? 1;
   const tx = x ?? 0;
@@ -94,7 +97,7 @@ function FramedLogo({ url, zoom, x, y, className, style }: { url: string; zoom?:
         src={url}
         alt="logo"
         crossOrigin="anonymous"
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover"
         style={{ transform: `translate(${tx}%, ${ty}%) scale(${z})`, transformOrigin: "center" }}
       />
     </div>
@@ -147,7 +150,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           <div className="relative flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               {model.logo_url ? (
-                <div className="h-16 w-16 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center">
+                <div className="h-16 w-16 rounded-xl bg-white shadow-md overflow-hidden">
                   <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
                 </div>
               ) : (
@@ -247,7 +250,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-80">Investimento total</p>
-                  <p className="font-black mt-1 leading-none" style={{ fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+                  <p className="font-black mt-1 leading-none" style={{ fontSize: TOTAL_PX, fontFamily: headerFamily }}>{fmtBR(total)}</p>
                 </div>
                 <span className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ background: S.accent, color: S.accentDark }}>
                   À vista
@@ -270,7 +273,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           <HeaderBackground color={headerBgHex ?? S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
           <div className="relative flex-1 flex flex-col">
             {model.logo_url ? (
-              <div className="h-16 w-16 rounded-lg bg-white p-1.5 flex items-center justify-center mb-4">
+              <div className="h-16 w-16 rounded-lg bg-white overflow-hidden mb-4">
                 <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
               </div>
             ) : (
@@ -364,7 +367,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           {((model.itens_servico && model.itens_servico.length > 0) || total > 0) && (
             <div className="mt-6 rounded-lg p-4 flex items-center justify-between" style={{ background: S.soft, border: `2px solid ${S.primaryDark}` }}>
               <p className="text-[11px] uppercase tracking-[0.2em] font-bold" style={{ color: S.primaryDark }}>Total da proposta</p>
-              <p className="font-black leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+              <p className="font-black leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX, fontFamily: headerFamily }}>{fmtBR(total)}</p>
             </div>
           )}
 
@@ -408,7 +411,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           </div>
           {/* logo no canto, sobreposto à faixa branca */}
           {model.logo_url && (
-            <div className="absolute bottom-2 right-6 h-16 w-16 rounded-full bg-white p-2 shadow-lg flex items-center justify-center z-10">
+            <div className="absolute bottom-2 right-6 h-16 w-16 rounded-full bg-white shadow-lg overflow-hidden z-10">
               <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
             </div>
           )}
@@ -501,7 +504,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
               style={{ background: `linear-gradient(120deg, ${S.primaryDark}, ${S.accent})` }}
             >
               <p className="text-[10px] uppercase tracking-[0.3em] font-black opacity-90">Investimento</p>
-              <p className="font-black leading-none mt-1" style={{ fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+              <p className="font-black leading-none mt-1" style={{ fontSize: TOTAL_PX, fontFamily: headerFamily }}>{fmtBR(total)}</p>
             </div>
           )}
 
@@ -522,7 +525,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
           <div className="relative flex items-center justify-between" style={{ color: headerTextColor }}>
             <div className="flex items-center gap-4">
               {model.logo_url ? (
-                <div className="h-14 w-14 bg-white p-1.5 rounded shadow flex items-center justify-center">
+                <div className="h-14 w-14 bg-white rounded shadow overflow-hidden">
                   <FramedLogo url={model.logo_url} zoom={logoZoom} x={logoX} y={logoY} className="h-full w-full" />
                 </div>
               ) : (
@@ -626,7 +629,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
             <div className="mt-6 rounded overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 text-white" style={{ background: S.primaryDark }}>
                 <p className="text-[11px] uppercase tracking-[0.25em] font-black">Valor total da proposta</p>
-                <p className="font-black leading-none" style={{ fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+                <p className="font-black leading-none" style={{ fontSize: TOTAL_PX, fontFamily: headerFamily }}>{fmtBR(total)}</p>
               </div>
               <div className="h-1" style={{ background: S.accent }} />
             </div>
@@ -720,7 +723,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
               <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500 font-bold">Total</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Investimento desta proposta</p>
             </div>
-            <p className="font-black tracking-tight leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX }}>{fmtBR(total)}</p>
+            <p className="font-black tracking-tight leading-none" style={{ color: S.primaryDark, fontSize: TOTAL_PX, fontFamily: headerFamily }}>{fmtBR(total)}</p>
           </div>
         )}
 
