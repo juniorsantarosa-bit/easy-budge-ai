@@ -127,6 +127,7 @@ function Preview() {
     } catch (e: any) {
       toast.error("Erro ao gerar PDF: " + e.message);
     } finally {
+      if (sandbox.parentNode) sandbox.parentNode.removeChild(sandbox);
       setDownloading(false);
     }
   }
