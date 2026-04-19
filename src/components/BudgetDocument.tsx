@@ -128,6 +128,14 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
   const logoX = model.logo_x ?? 0;
   const logoY = model.logo_y ?? 0;
 
+  // Cor de fundo do cabeçalho (alinhada à paleta) — substitui o gradiente padrão.
+  // Se o usuário não escolheu, fica undefined e cada layout usa seu próprio default.
+  const headerBgHex = model.header_bg_color ? resolveHeaderBgHex(S, model.header_bg_color) : undefined;
+  const headerIsLight = headerBgHex ? isLightHex(headerBgHex) : false;
+  // Para legibilidade quando o fundo é claro (ex: branco)
+  const headerTextColor = headerIsLight ? S.primaryDark : "#ffffff";
+  const headerSubtleColor = headerIsLight ? S.primary : "rgba(255,255,255,0.85)";
+
   // ---------- LAYOUT MODERNO (gradient hero) ----------
   if (L === "moderno") {
     const headerColor = `linear-gradient(135deg, ${S.primaryDark} 0%, ${S.primary} 100%)`;
