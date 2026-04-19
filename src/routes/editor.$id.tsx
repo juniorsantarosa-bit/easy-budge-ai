@@ -154,10 +154,17 @@ function Editor() {
       <Card className="p-4 mb-4">
         <h2 className="text-sm font-semibold mb-3">Cabeçalho do orçamento</h2>
 
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-3">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-soft overflow-hidden">
             {model.logo_url ? (
-              <img src={model.logo_url} alt="logo" className="h-full w-full object-contain" />
+              <img
+                src={model.logo_url}
+                alt="logo"
+                className="h-full w-full object-contain"
+                style={{
+                  transform: `translate(${model.logo_x ?? 0}%, ${model.logo_y ?? 0}%) scale(${model.logo_zoom ?? 1})`,
+                }}
+              />
             ) : (
               <ImgIcon className="h-6 w-6 text-primary" />
             )}
@@ -178,6 +185,57 @@ function Editor() {
             </Button>
           </label>
         </div>
+
+        {/* Enquadramento do logo */}
+        {model.logo_url && (
+          <div className="mb-4 rounded-lg border border-border p-3 bg-muted/30">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold">Enquadrar logo</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 text-[11px]"
+                onClick={() => persist({ logo_zoom: 1, logo_x: 0, logo_y: 0 })}
+              >
+                ↺ Reset
+              </Button>
+            </div>
+            <Label className="text-[11px] text-muted-foreground flex items-center justify-between mb-1">
+              <span>Zoom</span>
+              <span className="font-mono text-[10px]">{(model.logo_zoom ?? 1).toFixed(2)}×</span>
+            </Label>
+            <Slider
+              min={50} max={300} step={5}
+              value={[Math.round((model.logo_zoom ?? 1) * 100)]}
+              onValueChange={(v) => persist({ logo_zoom: v[0] / 100 })}
+              className="mb-2"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[11px] text-muted-foreground flex items-center justify-between mb-1">
+                  <span>↔ Horizontal</span>
+                  <span className="font-mono text-[10px]">{model.logo_x ?? 0}%</span>
+                </Label>
+                <Slider
+                  min={-50} max={50} step={1}
+                  value={[model.logo_x ?? 0]}
+                  onValueChange={(v) => persist({ logo_x: v[0] })}
+                />
+              </div>
+              <div>
+                <Label className="text-[11px] text-muted-foreground flex items-center justify-between mb-1">
+                  <span>↕ Vertical</span>
+                  <span className="font-mono text-[10px]">{model.logo_y ?? 0}%</span>
+                </Label>
+                <Slider
+                  min={-50} max={50} step={1}
+                  value={[model.logo_y ?? 0]}
+                  onValueChange={(v) => persist({ logo_y: v[0] })}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <Label className="text-xs text-muted-foreground">Nome que aparece ao lado do logo</Label>
         <Input
