@@ -519,7 +519,7 @@ export const BudgetDocument = forwardRef<HTMLDivElement, Props>(function BudgetD
         <div className="h-2" style={{ background: S.accent }} />
         <div className="relative px-6 py-5 overflow-hidden">
           <HeaderBackground color={headerBgHex ?? S.primaryDark} imageUrl={headerImg} opacity={headerOp} zoom={headerZoom} posX={headerPX} posY={headerPY} overlayColor={headerOverlay} />
-          <div className="relative flex items-center justify-between text-white">
+          <div className="relative flex items-center justify-between" style={{ color: headerTextColor }}>
             <div className="flex items-center gap-4">
               {model.logo_url ? (
                 <div className="h-14 w-14 bg-white p-1.5 rounded shadow flex items-center justify-center">
