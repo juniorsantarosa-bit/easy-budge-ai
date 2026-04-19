@@ -6,11 +6,16 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Sparkles, Save, Trash2, Plus, Image as ImgIcon, X, Loader2, Upload } from "lucide-react";
-import { getModel, saveModel, type BudgetModel, type BudgetField, type ColorScheme, type LayoutTheme, type HeaderFont, COLOR_SCHEMES, HEADER_FONTS, uid } from "@/lib/storage";
+import { Eye, Sparkles, Save, Trash2, Plus, Image as ImgIcon, X, Loader2 } from "lucide-react";
+import {
+  getModel, saveModel, type BudgetModel, type BudgetField, type ColorScheme,
+  type LayoutTheme, type HeaderFont,
+  COLOR_SCHEMES, HEADER_FONTS, uid, resolveScheme,
+} from "@/lib/storage";
 import { aiImprovements } from "@/server/ai";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { BudgetDocument } from "@/components/BudgetDocument";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,6 +32,7 @@ function Editor() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiList, setAiList] = useState<any[]>([]);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [headerImgUploading, setHeaderImgUploading] = useState(false);
 
   useEffect(() => {
     const m = getModel(id);
