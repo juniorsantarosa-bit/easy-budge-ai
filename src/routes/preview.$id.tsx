@@ -42,9 +42,10 @@ function Preview() {
     setDownloading(true);
 
     // Container off-screen com largura A4 (794px ≈ 210mm @ 96dpi).
-    // Clonamos o documento para renderizar no tamanho A4 — assim o PDF
-    // fica idêntico ao preview, mas com o layout ajustado para a folha.
+    // Clonamos o documento para renderizar no tamanho A4 e exportamos tudo
+    // em uma única folha, evitando cortes arbitrários entre blocos.
     const A4_WIDTH_PX = 794;
+    const PDF_MARGIN_MM = 8;
     const sandbox = document.createElement("div");
     sandbox.style.position = "fixed";
     sandbox.style.top = "0";
@@ -66,6 +67,19 @@ function Preview() {
       if ((document as any).fonts?.ready) {
         try { await (document as any).fonts.ready; } catch {}
       }
+      const cloneImages = Array.from(clone.querySelectorAll("img"));
+      await Promise.all(
+        cloneImages.map(
+          (img) => new Promise<void>((resolve) => {
+            if (img.complete) {
+              resolve();
+              return;
+            }
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => resolve(), { once: true });
+          }),
+        ),
+      );
       await new Promise((r) => setTimeout(r, 100));
 
       const canvas = await html2canvas(clone, {
@@ -80,34 +94,16 @@ function Preview() {
       const pageW = 210; // A4 width mm
       const pageH = 297; // A4 height mm
 
-      // Altura proporcional da imagem em mm (full bleed: 0 margem)
-      const imgFullH = (canvas.height * pageW) / canvas.width;
-
-      if (imgFullH <= pageH) {
-        // Cabe em uma página só
-        const img = canvas.toDataURL("image/png");
-        pdf.addImage(img, "PNG", 0, 0, pageW, imgFullH);
-      } else {
-        // Multi-página: fatia o canvas em pedaços de altura = pageH
-        const pxPerMm = canvas.width / pageW;
-        const pageHpx = Math.floor(pageH * pxPerMm);
-        let renderedPx = 0;
-        while (renderedPx < canvas.height) {
-          const sliceH = Math.min(pageHpx, canvas.height - renderedPx);
-          const pageCanvas = document.createElement("canvas");
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = sliceH;
-          const ctx = pageCanvas.getContext("2d")!;
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-          ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-          const sliceImg = pageCanvas.toDataURL("image/png");
-          const sliceMmH = (sliceH * pageW) / canvas.width;
-          if (renderedPx > 0) pdf.addPage();
-          pdf.addImage(sliceImg, "PNG", 0, 0, pageW, sliceMmH);
-          renderedPx += sliceH;
-        }
-      }
+      const maxW = pageW - PDF_MARGIN_MM * 2;
+      const maxH = pageH - PDF_MARGIN_MM * 2;
+      const widthFitH = (canvas.height * maxW) / canvas.width;
+      const scale = widthFitH > maxH ? maxH / widthFitH : 1;
+      const renderW = maxW * scale;
+      const renderH = widthFitH * scale;
+      const offsetX = (pageW - renderW) / 2;
+      const offsetY = (pageH - renderH) / 2;
+      const img = canvas.toDataURL("image/png");
+      pdf.addImage(img, "PNG", offsetX, offsetY, renderW, renderH);
 
       pdf.save(`orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.pdf`);
 
