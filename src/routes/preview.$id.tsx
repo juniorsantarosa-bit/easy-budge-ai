@@ -41,11 +41,14 @@ function Preview() {
     if (!docRef.current || !model) return;
     setDownloading(true);
 
-    // Container off-screen com largura A4 (794px ≈ 210mm @ 96dpi).
-    // Clonamos o documento para renderizar no tamanho A4 e exportamos tudo
-    // em uma única folha, evitando cortes arbitrários entre blocos.
-    const A4_WIDTH_PX = 794;
-    const PDF_MARGIN_MM = 8;
+    // Estratégia: renderizar o documento em um sandbox com largura A4 e
+    // ALTURA A4 proporcional (mesma proporção 210x297). Forçamos o conteúdo
+    // a caber na folha aplicando um zoom CSS dinâmico antes do html2canvas.
+    // Isso garante UMA ÚNICA página com layout idêntico ao preview.
+    const A4_WIDTH_PX = 794;   // 210mm @ 96dpi
+    const A4_HEIGHT_PX = 1123; // 297mm @ 96dpi
+    const PDF_MARGIN_MM = 6;
+
     const sandbox = document.createElement("div");
     sandbox.style.position = "fixed";
     sandbox.style.top = "0";
@@ -53,10 +56,19 @@ function Preview() {
     sandbox.style.width = `${A4_WIDTH_PX}px`;
     sandbox.style.background = "#ffffff";
     sandbox.style.zIndex = "-1";
+
+    // Wrapper interno que receberá o zoom para encolher o conteúdo se necessário
+    const wrapper = document.createElement("div");
+    wrapper.style.width = `${A4_WIDTH_PX}px`;
+    wrapper.style.background = "#ffffff";
+    wrapper.style.transformOrigin = "top left";
+
     const clone = docRef.current.cloneNode(true) as HTMLElement;
     clone.style.width = `${A4_WIDTH_PX}px`;
     clone.style.maxWidth = "none";
-    sandbox.appendChild(clone);
+    clone.style.minHeight = "0";
+    wrapper.appendChild(clone);
+    sandbox.appendChild(wrapper);
     document.body.appendChild(sandbox);
 
     try {
@@ -80,30 +92,51 @@ function Preview() {
           }),
         ),
       );
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 150));
 
-      const canvas = await html2canvas(clone, {
+      // Mede a altura natural do conteúdo e calcula o zoom necessário
+      // para caber em uma página A4 (na largura inteira).
+      const naturalH = clone.scrollHeight;
+      const fitScale = naturalH > A4_HEIGHT_PX ? A4_HEIGHT_PX / naturalH : 1;
+      if (fitScale < 1) {
+        wrapper.style.transform = `scale(${fitScale})`;
+        wrapper.style.width = `${A4_WIDTH_PX}px`;
+        // Após o scale, a largura visual encolhe: compensamos definindo
+        // a largura do sandbox para o tamanho final, evitando faixa branca.
+        sandbox.style.width = `${A4_WIDTH_PX * fitScale}px`;
+      }
+      await new Promise((r) => setTimeout(r, 50));
+
+      const finalW = A4_WIDTH_PX * fitScale;
+      const finalH = naturalH * fitScale;
+
+      const canvas = await html2canvas(wrapper, {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         windowWidth: A4_WIDTH_PX,
-        width: A4_WIDTH_PX,
+        width: finalW,
+        height: finalH,
       });
 
       const pdf = new jsPDF("p", "mm", "a4");
-      const pageW = 210; // A4 width mm
-      const pageH = 297; // A4 height mm
-
+      const pageW = 210;
+      const pageH = 297;
       const maxW = pageW - PDF_MARGIN_MM * 2;
       const maxH = pageH - PDF_MARGIN_MM * 2;
-      const widthFitH = (canvas.height * maxW) / canvas.width;
-      const scale = widthFitH > maxH ? maxH / widthFitH : 1;
-      const renderW = maxW * scale;
-      const renderH = widthFitH * scale;
+
+      // Ajusta proporcionalmente para caber dentro das margens
+      const ratio = canvas.width / canvas.height;
+      let renderW = maxW;
+      let renderH = renderW / ratio;
+      if (renderH > maxH) {
+        renderH = maxH;
+        renderW = renderH * ratio;
+      }
       const offsetX = (pageW - renderW) / 2;
-      const offsetY = (pageH - renderH) / 2;
-      const img = canvas.toDataURL("image/png");
-      pdf.addImage(img, "PNG", offsetX, offsetY, renderW, renderH);
+      const offsetY = PDF_MARGIN_MM;
+      const img = canvas.toDataURL("image/jpeg", 0.95);
+      pdf.addImage(img, "JPEG", offsetX, offsetY, renderW, renderH);
 
       pdf.save(`orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.pdf`);
 
