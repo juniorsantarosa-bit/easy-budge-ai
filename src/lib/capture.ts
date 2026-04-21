@@ -20,12 +20,10 @@ async function waitForImages(root: HTMLElement) {
 }
 
 export async function captureElement(node: HTMLElement) {
-  if ((document as Document & { fonts?: FontFaceSet }).fonts?.ready) {
-    try {
-      await document.fonts.ready;
-    } catch {
-      // ignore font readiness failures
-    }
+  try {
+    await document.fonts.ready;
+  } catch {
+    // ignore font readiness failures
   }
 
   const width = Math.ceil(node.getBoundingClientRect().width);
