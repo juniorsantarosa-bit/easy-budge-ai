@@ -2,8 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, Pencil } from "lucide-react";
+import { Download, Loader2, Pencil, Link2, Share2 } from "lucide-react";
 import { addHistory, getModel, uid, type BudgetModel } from "@/lib/storage";
+import { encodeShare } from "@/lib/share";
 import { BudgetDocument } from "@/components/BudgetDocument";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ function Preview() {
   const [model, setModel] = useState<BudgetModel | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const docRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,126 +39,104 @@ function Preview() {
     } catch {}
   }, [id, navigate]);
 
-  async function downloadPDF() {
+  function buildShareUrl(): string {
+    if (!model) return "";
+    const token = encodeShare({ v: 1, model, values });
+    return `${window.location.origin}/share/${token}`;
+  }
+
+  function recordHistory() {
+    if (!model) return;
+    const total = (model.itens_servico ?? []).reduce(
+      (s, it) => s + (it.quantidade ?? 1) * (it.valor_unitario ?? 0),
+      0,
+    );
+    const clienteCampo = model.campos.find((c) => /cliente|nome/i.test(c.chave));
+    addHistory({
+      id: uid(),
+      modelo_id: model.id,
+      modelo_titulo: model.titulo,
+      cliente: clienteCampo ? values[clienteCampo.chave] : undefined,
+      total,
+      emitido_em: Date.now(),
+    });
+  }
+
+  async function shareLink() {
+    if (!model) return;
+    setSharing(true);
+    try {
+      const url = buildShareUrl();
+      if (navigator.share) {
+        await navigator.share({
+          title: `Orçamento — ${model.titulo}`,
+          text: "Veja seu orçamento:",
+          url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copiado!");
+      }
+      recordHistory();
+    } catch (e: any) {
+      if (e?.name !== "AbortError") {
+        toast.error("Erro ao compartilhar: " + (e?.message ?? ""));
+      }
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  async function copyLink() {
+    if (!model) return;
+    try {
+      await navigator.clipboard.writeText(buildShareUrl());
+      toast.success("Link copiado!");
+      recordHistory();
+    } catch (e: any) {
+      toast.error("Erro ao copiar: " + e.message);
+    }
+  }
+
+  async function downloadImage() {
     if (!docRef.current || !model) return;
     setDownloading(true);
-
-    // Estratégia: renderizar o documento em um sandbox com largura A4 e
-    // ALTURA A4 proporcional (mesma proporção 210x297). Forçamos o conteúdo
-    // a caber na folha aplicando um zoom CSS dinâmico antes do html2canvas.
-    // Isso garante UMA ÚNICA página com layout idêntico ao preview.
-    const A4_WIDTH_PX = 794;   // 210mm @ 96dpi
-    const A4_HEIGHT_PX = 1123; // 297mm @ 96dpi
-    const PDF_MARGIN_MM = 6;
-
-    const sandbox = document.createElement("div");
-    sandbox.style.position = "fixed";
-    sandbox.style.top = "0";
-    sandbox.style.left = "-10000px";
-    sandbox.style.width = `${A4_WIDTH_PX}px`;
-    sandbox.style.background = "#ffffff";
-    sandbox.style.zIndex = "-1";
-
-    // Wrapper interno que receberá o zoom para encolher o conteúdo se necessário
-    const wrapper = document.createElement("div");
-    wrapper.style.width = `${A4_WIDTH_PX}px`;
-    wrapper.style.background = "#ffffff";
-    wrapper.style.transformOrigin = "top left";
-
-    const clone = docRef.current.cloneNode(true) as HTMLElement;
-    clone.style.width = `${A4_WIDTH_PX}px`;
-    clone.style.maxWidth = "none";
-    clone.style.minHeight = "0";
-    wrapper.appendChild(clone);
-    sandbox.appendChild(wrapper);
-    document.body.appendChild(sandbox);
-
     try {
       const html2canvas = (await import("html2canvas-pro")).default;
-      const { jsPDF } = await import("jspdf");
 
-      // Aguarda fontes/imagens carregarem antes de capturar
+      // Aguarda fontes e imagens
       if ((document as any).fonts?.ready) {
         try { await (document as any).fonts.ready; } catch {}
       }
-      const cloneImages = Array.from(clone.querySelectorAll("img"));
+      const imgs = Array.from(docRef.current.querySelectorAll("img"));
       await Promise.all(
-        cloneImages.map(
-          (img) => new Promise<void>((resolve) => {
-            if (img.complete) {
-              resolve();
-              return;
-            }
-            img.addEventListener("load", () => resolve(), { once: true });
-            img.addEventListener("error", () => resolve(), { once: true });
-          }),
+        imgs.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) return resolve();
+              img.addEventListener("load", () => resolve(), { once: true });
+              img.addEventListener("error", () => resolve(), { once: true });
+            }),
         ),
       );
-      await new Promise((r) => setTimeout(r, 150));
 
-      // Mede a altura natural do conteúdo e calcula o zoom necessário
-      // para caber em uma página A4 (na largura inteira).
-      const naturalH = clone.scrollHeight;
-      const fitScale = naturalH > A4_HEIGHT_PX ? A4_HEIGHT_PX / naturalH : 1;
-      if (fitScale < 1) {
-        wrapper.style.transform = `scale(${fitScale})`;
-        wrapper.style.width = `${A4_WIDTH_PX}px`;
-        // Após o scale, a largura visual encolhe: compensamos definindo
-        // a largura do sandbox para o tamanho final, evitando faixa branca.
-        sandbox.style.width = `${A4_WIDTH_PX * fitScale}px`;
-      }
-      await new Promise((r) => setTimeout(r, 50));
-
-      const finalW = A4_WIDTH_PX * fitScale;
-      const finalH = naturalH * fitScale;
-
-      const canvas = await html2canvas(wrapper, {
-        scale: 2,
+      // Captura DIRETA do preview — sem nenhuma adequação/escala/conversão.
+      const canvas = await html2canvas(docRef.current, {
+        scale: 3,
         backgroundColor: "#ffffff",
         useCORS: true,
-        windowWidth: A4_WIDTH_PX,
-        width: finalW,
-        height: finalH,
       });
 
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageW = 210;
-      const pageH = 297;
-      const maxW = pageW - PDF_MARGIN_MM * 2;
-      const maxH = pageH - PDF_MARGIN_MM * 2;
+      const link = document.createElement("a");
+      link.download = `orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
 
-      // Ajusta proporcionalmente para caber dentro das margens
-      const ratio = canvas.width / canvas.height;
-      let renderW = maxW;
-      let renderH = renderW / ratio;
-      if (renderH > maxH) {
-        renderH = maxH;
-        renderW = renderH * ratio;
-      }
-      const offsetX = (pageW - renderW) / 2;
-      const offsetY = PDF_MARGIN_MM;
-      const img = canvas.toDataURL("image/jpeg", 0.95);
-      pdf.addImage(img, "JPEG", offsetX, offsetY, renderW, renderH);
-
-      pdf.save(`orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.pdf`);
-
-      // Salva no histórico de orçamentos emitidos
-      const total = (model.itens_servico ?? []).reduce((s, it) => s + (it.quantidade ?? 1) * (it.valor_unitario ?? 0), 0);
-      const clienteCampo = model.campos.find((c) => /cliente|nome/i.test(c.chave));
-      addHistory({
-        id: uid(),
-        modelo_id: model.id,
-        modelo_titulo: model.titulo,
-        cliente: clienteCampo ? values[clienteCampo.chave] : undefined,
-        total,
-        emitido_em: Date.now(),
-      });
-
-      toast.success("PDF baixado!");
+      recordHistory();
+      toast.success("Imagem baixada!");
     } catch (e: any) {
-      toast.error("Erro ao gerar PDF: " + e.message);
+      toast.error("Erro ao gerar imagem: " + e.message);
     } finally {
-      if (sandbox.parentNode) sandbox.parentNode.removeChild(sandbox);
       setDownloading(false);
     }
   }
@@ -179,16 +159,39 @@ function Preview() {
         <BudgetDocument ref={docRef} model={model} values={values} />
       </div>
 
-      <Button
-        onClick={downloadPDF}
-        disabled={downloading}
-        size="lg"
-        className="w-full mt-5 h-14 text-base"
-        style={{ background: "var(--gradient-primary)" }}
-      >
-        {downloading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Download className="h-5 w-5 mr-2" />}
-        {downloading ? "Gerando PDF..." : "Baixar PDF"}
-      </Button>
+      <div className="mt-5 space-y-2.5">
+        <Button
+          onClick={shareLink}
+          disabled={sharing}
+          size="lg"
+          className="w-full h-14 text-base"
+          style={{ background: "var(--gradient-primary)" }}
+        >
+          {sharing ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Share2 className="h-5 w-5 mr-2" />}
+          {sharing ? "Preparando..." : "Compartilhar por link"}
+        </Button>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <Button onClick={copyLink} variant="outline" size="lg" className="h-12">
+            <Link2 className="h-4 w-4 mr-2" />
+            Copiar link
+          </Button>
+          <Button
+            onClick={downloadImage}
+            disabled={downloading}
+            variant="outline"
+            size="lg"
+            className="h-12"
+          >
+            {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            {downloading ? "Gerando..." : "Salvar PNG"}
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground text-center pt-1">
+          O link abre o orçamento exatamente como você está vendo, em qualquer celular.
+        </p>
+      </div>
     </AppShell>
   );
 }

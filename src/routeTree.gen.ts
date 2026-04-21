@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
 import { Route as ModelosRouteImport } from './routes/modelos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as PreviewIdRouteImport } from './routes/preview.$id'
 import { Route as NovoUploadRouteImport } from './routes/novo.upload'
 import { Route as NovoIaRouteImport } from './routes/novo.ia'
@@ -30,6 +31,11 @@ const ModelosRoute = ModelosRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PreviewIdRoute = PreviewIdRouteImport.update({
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/novo/ia': typeof NovoIaRoute
   '/novo/upload': typeof NovoUploadRoute
   '/preview/$id': typeof PreviewIdRoute
+  '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/novo/ia': typeof NovoIaRoute
   '/novo/upload': typeof NovoUploadRoute
   '/preview/$id': typeof PreviewIdRoute
+  '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/novo/ia': typeof NovoIaRoute
   '/novo/upload': typeof NovoUploadRoute
   '/preview/$id': typeof PreviewIdRoute
+  '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/novo/ia'
     | '/novo/upload'
     | '/preview/$id'
+    | '/share/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/novo/ia'
     | '/novo/upload'
     | '/preview/$id'
+    | '/share/$token'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/novo/ia'
     | '/novo/upload'
     | '/preview/$id'
+    | '/share/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +131,7 @@ export interface RootRouteChildren {
   NovoIaRoute: typeof NovoIaRoute
   NovoUploadRoute: typeof NovoUploadRoute
   PreviewIdRoute: typeof PreviewIdRoute
+  ShareTokenRoute: typeof ShareTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/preview/$id': {
@@ -183,7 +203,17 @@ const rootRouteChildren: RootRouteChildren = {
   NovoIaRoute: NovoIaRoute,
   NovoUploadRoute: NovoUploadRoute,
   PreviewIdRoute: PreviewIdRoute,
+  ShareTokenRoute: ShareTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
