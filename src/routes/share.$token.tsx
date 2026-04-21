@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { decodeShare } from "@/lib/share";
 import { BudgetDocument } from "@/components/BudgetDocument";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, Share2, ArrowLeft } from "lucide-react";
+import { Download, Loader2, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { downloadElementAsPng } from "@/lib/capture";
+import { buildPublicShareUrl, resolveSharedBudget } from "@/lib/share-client";
 
 export const Route = createFileRoute("/share/$token")({
   component: SharePage,
@@ -20,13 +21,40 @@ function SharePage() {
   const { token } = Route.useParams();
   const docRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
-  const data = useMemo(() => decodeShare(token), [token]);
+  const [data, setData] = useState<Awaited<ReturnType<typeof resolveSharedBudget>>>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      setLoading(true);
+      const result = await resolveSharedBudget(token);
+      if (!active) return;
+      setData(result);
+      setLoading(false);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   useEffect(() => {
     if (data?.model?.titulo) {
       document.title = `Orçamento — ${data.model.titulo}`;
     }
   }, [data]);
+
+  if (loading) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center p-6 bg-muted/30">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando orçamento...
+        </div>
+      </div>
+    );
+  }
 
   if (!data) {
     return (
@@ -50,19 +78,10 @@ function SharePage() {
     if (!docRef.current) return;
     setDownloading(true);
     try {
-      const html2canvas = (await import("html2canvas-pro")).default;
-      if ((document as any).fonts?.ready) {
-        try { await (document as any).fonts.ready; } catch {}
-      }
-      const canvas = await html2canvas(docRef.current, {
-        scale: 3,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-      });
-      const link = document.createElement("a");
-      link.download = `orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      await downloadElementAsPng(
+        docRef.current,
+        `orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.png`,
+      );
       toast.success("Imagem salva!");
     } catch (e: any) {
       toast.error("Erro ao gerar imagem: " + e.message);
@@ -72,7 +91,7 @@ function SharePage() {
   }
 
   async function shareLink() {
-    const url = window.location.href;
+    const url = buildPublicShareUrl(token);
     try {
       if (navigator.share) {
         await navigator.share({ title: `Orçamento — ${model.titulo}`, url });

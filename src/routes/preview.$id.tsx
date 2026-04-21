@@ -4,9 +4,10 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Pencil, Link2, Share2 } from "lucide-react";
 import { addHistory, getModel, uid, type BudgetModel } from "@/lib/storage";
-import { encodeShare } from "@/lib/share";
 import { BudgetDocument } from "@/components/BudgetDocument";
 import { toast } from "sonner";
+import { downloadElementAsPng } from "@/lib/capture";
+import { buildPublicShareUrl, createShareSnapshot } from "@/lib/share-client";
 
 export const Route = createFileRoute("/preview/$id")({
   component: Preview,
@@ -39,10 +40,10 @@ function Preview() {
     } catch {}
   }, [id, navigate]);
 
-  function buildShareUrl(): string {
+  async function buildShareUrl(): Promise<string> {
     if (!model) return "";
-    const token = encodeShare({ v: 1, model, values });
-    return `${window.location.origin}/share/${token}`;
+    const token = await createShareSnapshot(model, values);
+    return buildPublicShareUrl(token);
   }
 
   function recordHistory() {
@@ -66,7 +67,7 @@ function Preview() {
     if (!model) return;
     setSharing(true);
     try {
-      const url = buildShareUrl();
+      const url = await buildShareUrl();
       if (navigator.share) {
         await navigator.share({
           title: `Orçamento — ${model.titulo}`,
@@ -90,7 +91,8 @@ function Preview() {
   async function copyLink() {
     if (!model) return;
     try {
-      await navigator.clipboard.writeText(buildShareUrl());
+      const url = await buildShareUrl();
+      await navigator.clipboard.writeText(url);
       toast.success("Link copiado!");
       recordHistory();
     } catch (e: any) {
@@ -102,35 +104,10 @@ function Preview() {
     if (!docRef.current || !model) return;
     setDownloading(true);
     try {
-      const html2canvas = (await import("html2canvas-pro")).default;
-
-      // Aguarda fontes e imagens
-      if ((document as any).fonts?.ready) {
-        try { await (document as any).fonts.ready; } catch {}
-      }
-      const imgs = Array.from(docRef.current.querySelectorAll("img"));
-      await Promise.all(
-        imgs.map(
-          (img) =>
-            new Promise<void>((resolve) => {
-              if (img.complete) return resolve();
-              img.addEventListener("load", () => resolve(), { once: true });
-              img.addEventListener("error", () => resolve(), { once: true });
-            }),
-        ),
+      await downloadElementAsPng(
+        docRef.current,
+        `orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.png`,
       );
-
-      // Captura DIRETA do preview — sem nenhuma adequação/escala/conversão.
-      const canvas = await html2canvas(docRef.current, {
-        scale: 3,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-      });
-
-      const link = document.createElement("a");
-      link.download = `orcamento-${model.titulo.replace(/\s+/g, "-").toLowerCase()}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
 
       recordHistory();
       toast.success("Imagem baixada!");
